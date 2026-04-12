@@ -49,6 +49,15 @@ export default defineConfig({
       strict: true,
       deny: ["**/.*"],
     },
+    // Proxy /api requests to the API server when running locally
+    ...(process.env.REPL_ID === undefined ? {
+      proxy: {
+        "/api": {
+          target: `http://localhost:${process.env.API_PORT ?? "3000"}`,
+          changeOrigin: true,
+        },
+      },
+    } : {}),
   },
   preview: {
     port,
