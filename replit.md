@@ -15,6 +15,30 @@ pnpm workspace monorepo using TypeScript. Each package manages its own dependenc
 - **Validation**: Zod (`zod/v4`), `drizzle-zod`
 - **API codegen**: Orval (from OpenAPI spec)
 - **Build**: esbuild (CJS bundle)
+- **Auth**: Clerk (`@clerk/express` server, `@clerk/react` client)
+
+## Authentication
+
+GymAssist uses Clerk for authentication with full proxy support.
+
+- Landing page (`/`) is public for unauthenticated users
+- Sign-in at `/sign-in`, sign-up at `/sign-up` (Clerk hosted UI)
+- All app routes (`/dashboard`, `/workouts`, `/exercises`, `/health`, `/chat`) are protected
+- API routes under `/api/*` require a valid Clerk session (returns 401 if not)
+- Data is scoped per user via `clerkUserId` column on workouts, healthMetrics, chatMessages tables
+- Exercises table is shared/global (no userId — shared library)
+- Sign-out button in sidebar, redirects to landing page
+- Manage users via the Auth pane in the workspace toolbar
+
+## App Structure
+
+- `/` — Landing page (public)
+- `/sign-in`, `/sign-up` — Clerk auth pages
+- `/dashboard` — Dashboard with stats, activity, and weight trend chart
+- `/workouts` — Workout plan CRUD with mark-complete
+- `/exercises` — Exercise library (shared) with search and filter
+- `/health` — Health metric logging and trend charts
+- `/chat` — AI coach chat (OpenAI gpt-5.2, per-user history)
 
 ## Key Commands
 

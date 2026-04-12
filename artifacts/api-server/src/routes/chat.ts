@@ -3,22 +3,25 @@ import { db, chatMessagesTable } from "@workspace/db";
 import { openai } from "@workspace/integrations-openai-ai-server";
 import { serializeRows, serializeRow } from "../lib/serialize";
 import { SendChatMessageBody, SendChatMessageResponse, GetChatHistoryResponse } from "@workspace/api-zod";
-import { desc } from "drizzle-orm";
+import { eq, and, desc } from "drizzle-orm";
 import { logger } from "../lib/logger";
 
 const router: IRouter = Router();
 
-router.get("/chat/history", async (_req, res): Promise<void> => {
-  const messages = await db.select().from(chatMessagesTable).orderBy(chatMessagesTable.createdAt);
+router.get("/chat/history", async (req, res): Promise<void> => {
+  const userId = (req as any).userId as string;
+  const messages = await db.select().from(chatMessagesTable).where(eq(chatMessagesTable.clerkUserId, userId)).orderBy(chatMessagesTable.createdAt);
   res.json(GetChatHistoryResponse.parse(serializeRows(messages)));
 });
 
-router.delete("/chat/history", async (_req, res): Promise<void> => {
-  await db.delete(chatMessagesTable);
+router.delete("/chat/history", async (req, res): Promise<void> => {
+  const userId = (req as any).userId as string;
+  await db.delete(chatMessagesTable).where(eq(chatMessagesTable.clerkUserId, userId));
   res.sendStatus(204);
 });
 
 router.post("/chat", async (req, res): Promise<void> => {
+  const userId = (req as any).userId as string;
   const parsed = SendChatMessageBody.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: parsed.error.message });
@@ -27,9 +30,9 @@ router.post("/chat", async (req, res): Promise<void> => {
 
   const userMessage = parsed.data.message;
 
-  await db.insert(chatMessagesTable).values({ role: "user", content: userMessage });
+  await db.insert(chatMessagesTable).values({ clerkUserId: userId, role: "user", content: userMessage });
 
-  const history = await db.select().from(chatMessagesTable).orderBy(chatMessagesTable.createdAt);
+  const history = await db.select().from(chatMessagesTable).where(eq(chatMessagesTable.clerkUserId, userId)).orderBy(chatMessagesTable.createdAt);
 
   const chatMessages = [
     {
@@ -64,7 +67,7 @@ Be concise, practical, and encouraging. Tailor your advice to the user's fitness
     reply = "I'm having trouble connecting right now. Please try again in a moment.";
   }
 
-  const [assistantMessage] = await db.insert(chatMessagesTable).values({ role: "assistant", content: reply }).returning();
+  const [assistantMessage] = await db.insert(chatMessagesTable).values({ clerkUserId: userId, role: "assistant", content: reply }).returning();
 
   res.json(SendChatMessageResponse.parse(serializeRow({ reply, messageId: assistantMessage.id })));
 });

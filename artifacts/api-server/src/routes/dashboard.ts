@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { eq, count, sql, desc, gte, avg } from "drizzle-orm";
+import { eq, count, sql, desc, gte, and } from "drizzle-orm";
 import { serializeRow, serializeRows } from "../lib/serialize";
 import { db, workoutsTable, exercisesTable, healthMetricsTable, chatMessagesTable } from "@workspace/db";
 import {
@@ -10,19 +10,21 @@ import {
 
 const router: IRouter = Router();
 
-router.get("/dashboard/summary", async (_req, res): Promise<void> => {
-  const [totalWorkoutsResult] = await db.select({ count: count() }).from(workoutsTable);
-  const [completedWorkoutsResult] = await db.select({ count: count() }).from(workoutsTable).where(eq(workoutsTable.completed, true));
+router.get("/dashboard/summary", async (req, res): Promise<void> => {
+  const userId = (req as any).userId as string;
+
+  const [totalWorkoutsResult] = await db.select({ count: count() }).from(workoutsTable).where(eq(workoutsTable.clerkUserId, userId));
+  const [completedWorkoutsResult] = await db.select({ count: count() }).from(workoutsTable).where(and(eq(workoutsTable.clerkUserId, userId), eq(workoutsTable.completed, true)));
   const [totalExercisesResult] = await db.select({ count: count() }).from(exercisesTable);
 
   const sevenDaysAgo = new Date();
   sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-  const [weeklyWorkoutsResult] = await db.select({ count: count() }).from(workoutsTable).where(gte(workoutsTable.createdAt, sevenDaysAgo));
+  const [weeklyWorkoutsResult] = await db.select({ count: count() }).from(workoutsTable).where(and(eq(workoutsTable.clerkUserId, userId), gte(workoutsTable.createdAt, sevenDaysAgo)));
 
-  const avgDurationResult = await db.select({ avg: sql<string>`AVG(${workoutsTable.durationMinutes})` }).from(workoutsTable);
+  const avgDurationResult = await db.select({ avg: sql<string>`AVG(${workoutsTable.durationMinutes})` }).from(workoutsTable).where(eq(workoutsTable.clerkUserId, userId));
   const avgDuration = avgDurationResult[0]?.avg != null ? parseFloat(avgDurationResult[0].avg) : null;
 
-  const latestWeightRow = await db.select().from(healthMetricsTable).where(eq(healthMetricsTable.type, "weight")).orderBy(desc(healthMetricsTable.loggedAt)).limit(1);
+  const latestWeightRow = await db.select().from(healthMetricsTable).where(and(eq(healthMetricsTable.clerkUserId, userId), eq(healthMetricsTable.type, "weight"))).orderBy(desc(healthMetricsTable.loggedAt)).limit(1);
   const latestWeight = latestWeightRow[0]?.value ?? null;
   const latestWeightUnit = latestWeightRow[0]?.unit ?? null;
 
@@ -37,10 +39,12 @@ router.get("/dashboard/summary", async (_req, res): Promise<void> => {
   }));
 });
 
-router.get("/dashboard/recent-activity", async (_req, res): Promise<void> => {
-  const recentWorkouts = await db.select().from(workoutsTable).orderBy(desc(workoutsTable.createdAt)).limit(5);
-  const recentMetrics = await db.select().from(healthMetricsTable).orderBy(desc(healthMetricsTable.loggedAt)).limit(5);
-  const recentChats = await db.select().from(chatMessagesTable).where(eq(chatMessagesTable.role, "user")).orderBy(desc(chatMessagesTable.createdAt)).limit(3);
+router.get("/dashboard/recent-activity", async (req, res): Promise<void> => {
+  const userId = (req as any).userId as string;
+
+  const recentWorkouts = await db.select().from(workoutsTable).where(eq(workoutsTable.clerkUserId, userId)).orderBy(desc(workoutsTable.createdAt)).limit(5);
+  const recentMetrics = await db.select().from(healthMetricsTable).where(eq(healthMetricsTable.clerkUserId, userId)).orderBy(desc(healthMetricsTable.loggedAt)).limit(5);
+  const recentChats = await db.select().from(chatMessagesTable).where(and(eq(chatMessagesTable.clerkUserId, userId), eq(chatMessagesTable.role, "user"))).orderBy(desc(chatMessagesTable.createdAt)).limit(3);
 
   const activities: Array<{ id: number; type: string; description: string; timestamp: string }> = [];
 
@@ -78,8 +82,10 @@ router.get("/dashboard/recent-activity", async (_req, res): Promise<void> => {
   res.json(GetRecentActivityResponse.parse(activities.slice(0, 10)));
 });
 
-router.get("/dashboard/metrics-trend", async (_req, res): Promise<void> => {
-  const metrics = await db.select().from(healthMetricsTable).orderBy(healthMetricsTable.loggedAt);
+router.get("/dashboard/metrics-trend", async (req, res): Promise<void> => {
+  const userId = (req as any).userId as string;
+
+  const metrics = await db.select().from(healthMetricsTable).where(eq(healthMetricsTable.clerkUserId, userId)).orderBy(healthMetricsTable.loggedAt);
 
   const grouped: Record<string, { unit: string; data: Array<{ loggedAt: string; value: number }> }> = {};
 

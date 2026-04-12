@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { eq } from "drizzle-orm";
+import { eq, and } from "drizzle-orm";
 import { db, workoutsTable } from "@workspace/db";
 import { serializeRows, serializeRow } from "../lib/serialize";
 import {
@@ -17,12 +17,14 @@ import {
 
 const router: IRouter = Router();
 
-router.get("/workouts", async (_req, res): Promise<void> => {
-  const workouts = await db.select().from(workoutsTable).orderBy(workoutsTable.createdAt);
+router.get("/workouts", async (req, res): Promise<void> => {
+  const userId = (req as any).userId as string;
+  const workouts = await db.select().from(workoutsTable).where(eq(workoutsTable.clerkUserId, userId)).orderBy(workoutsTable.createdAt);
   res.json(ListWorkoutsResponse.parse(serializeRows(workouts)));
 });
 
 router.post("/workouts", async (req, res): Promise<void> => {
+  const userId = (req as any).userId as string;
   const parsed = CreateWorkoutBody.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: parsed.error.message });
@@ -31,6 +33,7 @@ router.post("/workouts", async (req, res): Promise<void> => {
 
   const data = parsed.data;
   const [workout] = await db.insert(workoutsTable).values({
+    clerkUserId: userId,
     name: data.name,
     description: data.description ?? null,
     goal: data.goal,
@@ -43,13 +46,14 @@ router.post("/workouts", async (req, res): Promise<void> => {
 });
 
 router.get("/workouts/:id", async (req, res): Promise<void> => {
+  const userId = (req as any).userId as string;
   const params = GetWorkoutParams.safeParse({ id: Number(Array.isArray(req.params.id) ? req.params.id[0] : req.params.id) });
   if (!params.success) {
     res.status(400).json({ error: params.error.message });
     return;
   }
 
-  const [workout] = await db.select().from(workoutsTable).where(eq(workoutsTable.id, params.data.id));
+  const [workout] = await db.select().from(workoutsTable).where(and(eq(workoutsTable.id, params.data.id), eq(workoutsTable.clerkUserId, userId)));
   if (!workout) {
     res.status(404).json({ error: "Workout not found" });
     return;
@@ -59,6 +63,7 @@ router.get("/workouts/:id", async (req, res): Promise<void> => {
 });
 
 router.patch("/workouts/:id", async (req, res): Promise<void> => {
+  const userId = (req as any).userId as string;
   const params = UpdateWorkoutParams.safeParse({ id: Number(Array.isArray(req.params.id) ? req.params.id[0] : req.params.id) });
   if (!params.success) {
     res.status(400).json({ error: params.error.message });
@@ -82,7 +87,7 @@ router.patch("/workouts/:id", async (req, res): Promise<void> => {
       ...(data.completed !== undefined && { completed: data.completed }),
       ...(data.scheduledAt !== undefined && { scheduledAt: data.scheduledAt ? new Date(data.scheduledAt) : null }),
     })
-    .where(eq(workoutsTable.id, params.data.id))
+    .where(and(eq(workoutsTable.id, params.data.id), eq(workoutsTable.clerkUserId, userId)))
     .returning();
 
   if (!workout) {
@@ -94,13 +99,14 @@ router.patch("/workouts/:id", async (req, res): Promise<void> => {
 });
 
 router.delete("/workouts/:id", async (req, res): Promise<void> => {
+  const userId = (req as any).userId as string;
   const params = DeleteWorkoutParams.safeParse({ id: Number(Array.isArray(req.params.id) ? req.params.id[0] : req.params.id) });
   if (!params.success) {
     res.status(400).json({ error: params.error.message });
     return;
   }
 
-  const [deleted] = await db.delete(workoutsTable).where(eq(workoutsTable.id, params.data.id)).returning();
+  const [deleted] = await db.delete(workoutsTable).where(and(eq(workoutsTable.id, params.data.id), eq(workoutsTable.clerkUserId, userId))).returning();
   if (!deleted) {
     res.status(404).json({ error: "Workout not found" });
     return;
@@ -110,6 +116,7 @@ router.delete("/workouts/:id", async (req, res): Promise<void> => {
 });
 
 router.patch("/workouts/:id/complete", async (req, res): Promise<void> => {
+  const userId = (req as any).userId as string;
   const params = CompleteWorkoutParams.safeParse({ id: Number(Array.isArray(req.params.id) ? req.params.id[0] : req.params.id) });
   if (!params.success) {
     res.status(400).json({ error: params.error.message });
@@ -118,7 +125,7 @@ router.patch("/workouts/:id/complete", async (req, res): Promise<void> => {
 
   const [workout] = await db.update(workoutsTable)
     .set({ completed: true })
-    .where(eq(workoutsTable.id, params.data.id))
+    .where(and(eq(workoutsTable.id, params.data.id), eq(workoutsTable.clerkUserId, userId)))
     .returning();
 
   if (!workout) {

@@ -17,27 +17,27 @@ import {
 const router: IRouter = Router();
 
 router.get("/health-metrics", async (req, res): Promise<void> => {
+  const userId = (req as any).userId as string;
   const query = ListHealthMetricsQueryParams.safeParse(req.query);
   if (!query.success) {
     res.status(400).json({ error: query.error.message });
     return;
   }
 
-  const conditions: SQL[] = [];
+  const conditions: SQL[] = [eq(healthMetricsTable.clerkUserId, userId)];
   if (query.data.type) {
     conditions.push(eq(healthMetricsTable.type, query.data.type));
   }
 
   const limit = query.data.limit ?? 100;
 
-  const metrics = conditions.length > 0
-    ? await db.select().from(healthMetricsTable).where(and(...conditions)).orderBy(desc(healthMetricsTable.loggedAt)).limit(limit)
-    : await db.select().from(healthMetricsTable).orderBy(desc(healthMetricsTable.loggedAt)).limit(limit);
+  const metrics = await db.select().from(healthMetricsTable).where(and(...conditions)).orderBy(desc(healthMetricsTable.loggedAt)).limit(limit);
 
   res.json(ListHealthMetricsResponse.parse(serializeRows(metrics)));
 });
 
 router.post("/health-metrics", async (req, res): Promise<void> => {
+  const userId = (req as any).userId as string;
   const parsed = CreateHealthMetricBody.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: parsed.error.message });
@@ -46,6 +46,7 @@ router.post("/health-metrics", async (req, res): Promise<void> => {
 
   const data = parsed.data;
   const [metric] = await db.insert(healthMetricsTable).values({
+    clerkUserId: userId,
     type: data.type,
     value: data.value,
     unit: data.unit,
@@ -57,13 +58,14 @@ router.post("/health-metrics", async (req, res): Promise<void> => {
 });
 
 router.get("/health-metrics/:id", async (req, res): Promise<void> => {
+  const userId = (req as any).userId as string;
   const params = GetHealthMetricParams.safeParse({ id: Number(Array.isArray(req.params.id) ? req.params.id[0] : req.params.id) });
   if (!params.success) {
     res.status(400).json({ error: params.error.message });
     return;
   }
 
-  const [metric] = await db.select().from(healthMetricsTable).where(eq(healthMetricsTable.id, params.data.id));
+  const [metric] = await db.select().from(healthMetricsTable).where(and(eq(healthMetricsTable.id, params.data.id), eq(healthMetricsTable.clerkUserId, userId)));
   if (!metric) {
     res.status(404).json({ error: "Health metric not found" });
     return;
@@ -73,6 +75,7 @@ router.get("/health-metrics/:id", async (req, res): Promise<void> => {
 });
 
 router.patch("/health-metrics/:id", async (req, res): Promise<void> => {
+  const userId = (req as any).userId as string;
   const params = UpdateHealthMetricParams.safeParse({ id: Number(Array.isArray(req.params.id) ? req.params.id[0] : req.params.id) });
   if (!params.success) {
     res.status(400).json({ error: params.error.message });
@@ -94,7 +97,7 @@ router.patch("/health-metrics/:id", async (req, res): Promise<void> => {
       ...(data.notes !== undefined && { notes: data.notes }),
       ...(data.loggedAt !== undefined && { loggedAt: data.loggedAt ? new Date(data.loggedAt) : new Date() }),
     })
-    .where(eq(healthMetricsTable.id, params.data.id))
+    .where(and(eq(healthMetricsTable.id, params.data.id), eq(healthMetricsTable.clerkUserId, userId)))
     .returning();
 
   if (!metric) {
@@ -106,13 +109,14 @@ router.patch("/health-metrics/:id", async (req, res): Promise<void> => {
 });
 
 router.delete("/health-metrics/:id", async (req, res): Promise<void> => {
+  const userId = (req as any).userId as string;
   const params = DeleteHealthMetricParams.safeParse({ id: Number(Array.isArray(req.params.id) ? req.params.id[0] : req.params.id) });
   if (!params.success) {
     res.status(400).json({ error: params.error.message });
     return;
   }
 
-  const [deleted] = await db.delete(healthMetricsTable).where(eq(healthMetricsTable.id, params.data.id)).returning();
+  const [deleted] = await db.delete(healthMetricsTable).where(and(eq(healthMetricsTable.id, params.data.id), eq(healthMetricsTable.clerkUserId, userId))).returning();
   if (!deleted) {
     res.status(404).json({ error: "Health metric not found" });
     return;
