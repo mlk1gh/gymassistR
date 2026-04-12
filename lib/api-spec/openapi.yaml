@@ -3,13 +3,23 @@ info:
   # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: GymAssist API specification
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
     description: Health operations
+  - name: workouts
+    description: Workout plan operations
+  - name: exercises
+    description: Exercise library operations
+  - name: health-metrics
+    description: Health monitoring operations
+  - name: chat
+    description: AI chatbot operations
+  - name: dashboard
+    description: Dashboard summary operations
 paths:
   /healthz:
     get:
@@ -24,6 +34,477 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+
+  /workouts:
+    get:
+      operationId: listWorkouts
+      tags: [workouts]
+      summary: List all workout plans
+      responses:
+        "200":
+          description: List of workout plans
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Workout"
+    post:
+      operationId: createWorkout
+      tags: [workouts]
+      summary: Create a new workout plan
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateWorkoutBody"
+      responses:
+        "201":
+          description: Created workout plan
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Workout"
+        "400":
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /workouts/{id}:
+    get:
+      operationId: getWorkout
+      tags: [workouts]
+      summary: Get a workout plan by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Workout plan
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Workout"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    patch:
+      operationId: updateWorkout
+      tags: [workouts]
+      summary: Update a workout plan
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateWorkoutBody"
+      responses:
+        "200":
+          description: Updated workout plan
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Workout"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    delete:
+      operationId: deleteWorkout
+      tags: [workouts]
+      summary: Delete a workout plan
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted successfully
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /workouts/{id}/complete:
+    patch:
+      operationId: completeWorkout
+      tags: [workouts]
+      summary: Mark a workout as completed
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Updated workout
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Workout"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /exercises:
+    get:
+      operationId: listExercises
+      tags: [exercises]
+      summary: List all exercises
+      parameters:
+        - name: muscleGroup
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: difficulty
+          in: query
+          required: false
+          schema:
+            type: string
+      responses:
+        "200":
+          description: List of exercises
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Exercise"
+    post:
+      operationId: createExercise
+      tags: [exercises]
+      summary: Create a custom exercise
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateExerciseBody"
+      responses:
+        "201":
+          description: Created exercise
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Exercise"
+        "400":
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /exercises/{id}:
+    get:
+      operationId: getExercise
+      tags: [exercises]
+      summary: Get an exercise by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Exercise
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Exercise"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    patch:
+      operationId: updateExercise
+      tags: [exercises]
+      summary: Update an exercise
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateExerciseBody"
+      responses:
+        "200":
+          description: Updated exercise
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Exercise"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    delete:
+      operationId: deleteExercise
+      tags: [exercises]
+      summary: Delete an exercise
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted successfully
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /health-metrics:
+    get:
+      operationId: listHealthMetrics
+      tags: [health-metrics]
+      summary: List health metric logs
+      parameters:
+        - name: type
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: List of health metrics
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/HealthMetric"
+    post:
+      operationId: createHealthMetric
+      tags: [health-metrics]
+      summary: Log a health metric
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateHealthMetricBody"
+      responses:
+        "201":
+          description: Created health metric
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthMetric"
+        "400":
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /health-metrics/{id}:
+    get:
+      operationId: getHealthMetric
+      tags: [health-metrics]
+      summary: Get a health metric by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Health metric
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthMetric"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    patch:
+      operationId: updateHealthMetric
+      tags: [health-metrics]
+      summary: Update a health metric
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateHealthMetricBody"
+      responses:
+        "200":
+          description: Updated health metric
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthMetric"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    delete:
+      operationId: deleteHealthMetric
+      tags: [health-metrics]
+      summary: Delete a health metric log
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted successfully
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /chat:
+    post:
+      operationId: sendChatMessage
+      tags: [chat]
+      summary: Send a message to the AI fitness chatbot
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ChatMessageBody"
+      responses:
+        "200":
+          description: AI response
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ChatResponse"
+        "400":
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /chat/history:
+    get:
+      operationId: getChatHistory
+      tags: [chat]
+      summary: Get chat message history
+      responses:
+        "200":
+          description: Chat history
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ChatMessage"
+    delete:
+      operationId: clearChatHistory
+      tags: [chat]
+      summary: Clear all chat history
+      responses:
+        "204":
+          description: Cleared successfully
+
+  /dashboard/summary:
+    get:
+      operationId: getDashboardSummary
+      tags: [dashboard]
+      summary: Get dashboard summary stats
+      responses:
+        "200":
+          description: Dashboard summary
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DashboardSummary"
+
+  /dashboard/recent-activity:
+    get:
+      operationId: getRecentActivity
+      tags: [dashboard]
+      summary: Get recent activity feed
+      responses:
+        "200":
+          description: Recent activity
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ActivityItem"
+
+  /dashboard/metrics-trend:
+    get:
+      operationId: getMetricsTrend
+      tags: [dashboard]
+      summary: Get health metrics trend data grouped by type
+      responses:
+        "200":
+          description: Metrics trend
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/MetricTrend"
+
 components:
   schemas:
     HealthStatus:
@@ -34,3 +515,328 @@ components:
       required:
         - status
 
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+      required:
+        - error
+
+    Workout:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        description:
+          type: ["string", "null"]
+        goal:
+          type: string
+        durationMinutes:
+          type: integer
+        difficulty:
+          type: string
+        completed:
+          type: boolean
+        scheduledAt:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+        updatedAt:
+          type: string
+      required:
+        - id
+        - name
+        - goal
+        - durationMinutes
+        - difficulty
+        - completed
+        - createdAt
+        - updatedAt
+
+    CreateWorkoutBody:
+      type: object
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+        goal:
+          type: string
+        durationMinutes:
+          type: integer
+        difficulty:
+          type: string
+        scheduledAt:
+          type: string
+      required:
+        - name
+        - goal
+        - durationMinutes
+        - difficulty
+
+    UpdateWorkoutBody:
+      type: object
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+        goal:
+          type: string
+        durationMinutes:
+          type: integer
+        difficulty:
+          type: string
+        completed:
+          type: boolean
+        scheduledAt:
+          type: string
+
+    Exercise:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        description:
+          type: ["string", "null"]
+        muscleGroup:
+          type: string
+        difficulty:
+          type: string
+        equipment:
+          type: ["string", "null"]
+        instructions:
+          type: ["string", "null"]
+        sets:
+          type: ["integer", "null"]
+        reps:
+          type: ["integer", "null"]
+        durationSeconds:
+          type: ["integer", "null"]
+        createdAt:
+          type: string
+        updatedAt:
+          type: string
+      required:
+        - id
+        - name
+        - muscleGroup
+        - difficulty
+        - createdAt
+        - updatedAt
+
+    CreateExerciseBody:
+      type: object
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+        muscleGroup:
+          type: string
+        difficulty:
+          type: string
+        equipment:
+          type: string
+        instructions:
+          type: string
+        sets:
+          type: integer
+        reps:
+          type: integer
+        durationSeconds:
+          type: integer
+      required:
+        - name
+        - muscleGroup
+        - difficulty
+
+    UpdateExerciseBody:
+      type: object
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+        muscleGroup:
+          type: string
+        difficulty:
+          type: string
+        equipment:
+          type: string
+        instructions:
+          type: string
+        sets:
+          type: integer
+        reps:
+          type: integer
+        durationSeconds:
+          type: integer
+
+    HealthMetric:
+      type: object
+      properties:
+        id:
+          type: integer
+        type:
+          type: string
+        value:
+          type: number
+        unit:
+          type: string
+        notes:
+          type: ["string", "null"]
+        loggedAt:
+          type: string
+        createdAt:
+          type: string
+        updatedAt:
+          type: string
+      required:
+        - id
+        - type
+        - value
+        - unit
+        - loggedAt
+        - createdAt
+        - updatedAt
+
+    CreateHealthMetricBody:
+      type: object
+      properties:
+        type:
+          type: string
+        value:
+          type: number
+        unit:
+          type: string
+        notes:
+          type: string
+        loggedAt:
+          type: string
+      required:
+        - type
+        - value
+        - unit
+
+    UpdateHealthMetricBody:
+      type: object
+      properties:
+        type:
+          type: string
+        value:
+          type: number
+        unit:
+          type: string
+        notes:
+          type: string
+        loggedAt:
+          type: string
+
+    ChatMessageBody:
+      type: object
+      properties:
+        message:
+          type: string
+      required:
+        - message
+
+    ChatResponse:
+      type: object
+      properties:
+        reply:
+          type: string
+        messageId:
+          type: integer
+      required:
+        - reply
+        - messageId
+
+    ChatMessage:
+      type: object
+      properties:
+        id:
+          type: integer
+        role:
+          type: string
+        content:
+          type: string
+        createdAt:
+          type: string
+      required:
+        - id
+        - role
+        - content
+        - createdAt
+
+    DashboardSummary:
+      type: object
+      properties:
+        totalWorkouts:
+          type: integer
+        completedWorkouts:
+          type: integer
+        totalExercises:
+          type: integer
+        latestWeight:
+          type: ["number", "null"]
+        latestWeightUnit:
+          type: ["string", "null"]
+        weeklyWorkoutsCount:
+          type: integer
+        averageDurationMinutes:
+          type: ["number", "null"]
+      required:
+        - totalWorkouts
+        - completedWorkouts
+        - totalExercises
+        - weeklyWorkoutsCount
+
+    ActivityItem:
+      type: object
+      properties:
+        id:
+          type: integer
+        type:
+          type: string
+        description:
+          type: string
+        timestamp:
+          type: string
+      required:
+        - id
+        - type
+        - description
+        - timestamp
+
+    MetricTrend:
+      type: object
+      properties:
+        type:
+          type: string
+        unit:
+          type: string
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/MetricDataPoint"
+      required:
+        - type
+        - unit
+        - data
+
+    MetricDataPoint:
+      type: object
+      properties:
+        loggedAt:
+          type: string
+        value:
+          type: number
+      required:
+        - loggedAt
+        - value

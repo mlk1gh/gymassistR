@@ -1,0 +1,31 @@
+kind = "web"
+previewPath = "/"
+title = "GymAssist"
+version = "1.0.0"
+id = "artifacts/gymassist"
+router = "path"
+
+[[integratedSkills]]
+name = "react-vite"
+version = "1.0.0"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 18970
+
+[services.development]
+run = "pnpm --filter @workspace/gymassist run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/gymassist", "run", "build" ]
+publicDir = "artifacts/gymassist/dist/public"
+serve = "static"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "18970"
+BASE_PATH = "/"
