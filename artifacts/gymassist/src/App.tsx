@@ -11,6 +11,7 @@ import WorkoutsPage from "@/pages/workouts";
 import ExercisesPage from "@/pages/exercises";
 import HealthPage from "@/pages/health";
 import ChatPage from "@/pages/chat";
+import AdminPage from "@/pages/admin";
 
 const clerkPubKey = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
 const clerkProxyUrl = import.meta.env.VITE_CLERK_PROXY_URL;
@@ -112,6 +113,7 @@ function Router() {
       <Route path="/exercises" component={() => <ProtectedRoute component={ExercisesPage} />} />
       <Route path="/health" component={() => <ProtectedRoute component={HealthPage} />} />
       <Route path="/chat" component={() => <ProtectedRoute component={ChatPage} />} />
+      <Route path="/admin" component={() => <ProtectedRoute component={AdminPage} />} />
       <Route component={NotFound} />
     </Switch>
   );

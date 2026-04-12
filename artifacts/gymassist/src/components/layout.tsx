@@ -1,8 +1,11 @@
 import { ReactNode } from "react";
 import { Link, useLocation } from "wouter";
-import { Activity, LayoutDashboard, Dumbbell, HeartPulse, MessageSquareText, LogOut } from "lucide-react";
+import { Activity, LayoutDashboard, Dumbbell, HeartPulse, MessageSquareText, LogOut, ShieldCheck } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useClerk, useUser } from "@clerk/react";
+import { useQuery } from "@tanstack/react-query";
+
+const BASE = import.meta.env.BASE_URL?.replace(/\/$/, "") || "";
 
 const NAV_ITEMS = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -16,6 +19,19 @@ export function AppLayout({ children }: { children: ReactNode }) {
   const [location] = useLocation();
   const { signOut } = useClerk();
   const { user } = useUser();
+
+  const { data: adminStatus } = useQuery({
+    queryKey: ["admin-status"],
+    queryFn: async () => {
+      const res = await fetch(`${BASE}/api/admin/status`, { credentials: "include" });
+      if (!res.ok) return { isAdmin: false };
+      return res.json() as Promise<{ isAdmin: boolean }>;
+    },
+    enabled: !!user,
+    staleTime: 60_000,
+  });
+
+  const isAdmin = adminStatus?.isAdmin === true;
 
   const handleSignOut = () => {
     const base = import.meta.env.BASE_URL?.replace(/\/$/, "") || "";
@@ -52,6 +68,21 @@ export function AppLayout({ children }: { children: ReactNode }) {
               </Link>
             );
           })}
+          {isAdmin && (
+            <Link
+              href="/admin"
+              className={cn(
+                "flex items-center gap-3 px-3 py-2.5 rounded-md font-medium transition-all group relative overflow-hidden",
+                location === "/admin" || location.startsWith("/admin")
+                  ? "text-primary-foreground bg-primary"
+                  : "text-muted-foreground hover:text-foreground hover:bg-secondary"
+              )}
+              data-testid="nav-admin"
+            >
+              <ShieldCheck className="w-5 h-5 relative z-10" />
+              <span className="relative z-10 whitespace-nowrap">Admin</span>
+            </Link>
+          )}
         </nav>
 
         {user && (
