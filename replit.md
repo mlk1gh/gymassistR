@@ -21,18 +21,18 @@ pnpm workspace monorepo using TypeScript. Each package manages its own dependenc
 
 GymAssist uses Clerk for authentication with full proxy support.
 
-- Landing page (`/`) is public for unauthenticated users
+- `/` redirects unauthenticated users to `/sign-in`; signed-in users go to `/dashboard`
 - Sign-in at `/sign-in`, sign-up at `/sign-up` (Clerk hosted UI)
-- All app routes (`/dashboard`, `/workouts`, `/exercises`, `/health`, `/chat`) are protected
+- All app routes (`/dashboard`, `/workouts`, `/exercises`, `/health`, `/chat`) are protected — unauthenticated access redirects to `/sign-in`
 - API routes under `/api/*` require a valid Clerk session (returns 401 if not)
 - Data is scoped per user via `clerkUserId` column on workouts, healthMetrics, chatMessages tables
 - Exercises table is shared/global (no userId — shared library)
-- Sign-out button in sidebar, redirects to landing page
+- Sign-out button in sidebar, redirects to `/sign-in`
 - Manage users via the Auth pane in the workspace toolbar
 
 ## App Structure
 
-- `/` — Landing page (public)
+- `/` — Redirects: signed-in → /dashboard, signed-out → /sign-in
 - `/sign-in`, `/sign-up` — Clerk auth pages
 - `/dashboard` — Dashboard with stats, activity, and weight trend chart
 - `/workouts` — Workout plan CRUD with mark-complete
