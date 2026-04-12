@@ -11,7 +11,7 @@ import {
 const router: IRouter = Router();
 
 router.get("/dashboard/summary", async (req, res): Promise<void> => {
-  const userId = (req as any).userId as string;
+  const userId = req.userId;
 
   const [totalWorkoutsResult] = await db.select({ count: count() }).from(workoutsTable).where(eq(workoutsTable.clerkUserId, userId));
   const [completedWorkoutsResult] = await db.select({ count: count() }).from(workoutsTable).where(and(eq(workoutsTable.clerkUserId, userId), eq(workoutsTable.completed, true)));
@@ -40,7 +40,7 @@ router.get("/dashboard/summary", async (req, res): Promise<void> => {
 });
 
 router.get("/dashboard/recent-activity", async (req, res): Promise<void> => {
-  const userId = (req as any).userId as string;
+  const userId = req.userId;
 
   const recentWorkouts = await db.select().from(workoutsTable).where(eq(workoutsTable.clerkUserId, userId)).orderBy(desc(workoutsTable.createdAt)).limit(5);
   const recentMetrics = await db.select().from(healthMetricsTable).where(eq(healthMetricsTable.clerkUserId, userId)).orderBy(desc(healthMetricsTable.loggedAt)).limit(5);
@@ -83,7 +83,7 @@ router.get("/dashboard/recent-activity", async (req, res): Promise<void> => {
 });
 
 router.get("/dashboard/metrics-trend", async (req, res): Promise<void> => {
-  const userId = (req as any).userId as string;
+  const userId = req.userId;
 
   const metrics = await db.select().from(healthMetricsTable).where(eq(healthMetricsTable.clerkUserId, userId)).orderBy(healthMetricsTable.loggedAt);
 

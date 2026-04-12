@@ -18,13 +18,13 @@ import {
 const router: IRouter = Router();
 
 router.get("/workouts", async (req, res): Promise<void> => {
-  const userId = (req as any).userId as string;
+  const userId = req.userId;
   const workouts = await db.select().from(workoutsTable).where(eq(workoutsTable.clerkUserId, userId)).orderBy(workoutsTable.createdAt);
   res.json(ListWorkoutsResponse.parse(serializeRows(workouts)));
 });
 
 router.post("/workouts", async (req, res): Promise<void> => {
-  const userId = (req as any).userId as string;
+  const userId = req.userId;
   const parsed = CreateWorkoutBody.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: parsed.error.message });
@@ -46,7 +46,7 @@ router.post("/workouts", async (req, res): Promise<void> => {
 });
 
 router.get("/workouts/:id", async (req, res): Promise<void> => {
-  const userId = (req as any).userId as string;
+  const userId = req.userId;
   const params = GetWorkoutParams.safeParse({ id: Number(Array.isArray(req.params.id) ? req.params.id[0] : req.params.id) });
   if (!params.success) {
     res.status(400).json({ error: params.error.message });
@@ -63,7 +63,7 @@ router.get("/workouts/:id", async (req, res): Promise<void> => {
 });
 
 router.patch("/workouts/:id", async (req, res): Promise<void> => {
-  const userId = (req as any).userId as string;
+  const userId = req.userId;
   const params = UpdateWorkoutParams.safeParse({ id: Number(Array.isArray(req.params.id) ? req.params.id[0] : req.params.id) });
   if (!params.success) {
     res.status(400).json({ error: params.error.message });
@@ -99,7 +99,7 @@ router.patch("/workouts/:id", async (req, res): Promise<void> => {
 });
 
 router.delete("/workouts/:id", async (req, res): Promise<void> => {
-  const userId = (req as any).userId as string;
+  const userId = req.userId;
   const params = DeleteWorkoutParams.safeParse({ id: Number(Array.isArray(req.params.id) ? req.params.id[0] : req.params.id) });
   if (!params.success) {
     res.status(400).json({ error: params.error.message });
@@ -116,7 +116,7 @@ router.delete("/workouts/:id", async (req, res): Promise<void> => {
 });
 
 router.patch("/workouts/:id/complete", async (req, res): Promise<void> => {
-  const userId = (req as any).userId as string;
+  const userId = req.userId;
   const params = CompleteWorkoutParams.safeParse({ id: Number(Array.isArray(req.params.id) ? req.params.id[0] : req.params.id) });
   if (!params.success) {
     res.status(400).json({ error: params.error.message });

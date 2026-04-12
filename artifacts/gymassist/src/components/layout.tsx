@@ -18,7 +18,8 @@ export function AppLayout({ children }: { children: ReactNode }) {
   const { user } = useUser();
 
   const handleSignOut = () => {
-    signOut({ redirectUrl: window.location.origin + (import.meta.env.BASE_URL || "/") });
+    const base = import.meta.env.BASE_URL?.replace(/\/$/, "") || "";
+    signOut({ redirectUrl: window.location.origin + base + "/sign-in" });
   };
 
   return (

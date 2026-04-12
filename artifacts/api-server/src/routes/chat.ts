@@ -9,19 +9,19 @@ import { logger } from "../lib/logger";
 const router: IRouter = Router();
 
 router.get("/chat/history", async (req, res): Promise<void> => {
-  const userId = (req as any).userId as string;
+  const userId = req.userId;
   const messages = await db.select().from(chatMessagesTable).where(eq(chatMessagesTable.clerkUserId, userId)).orderBy(chatMessagesTable.createdAt);
   res.json(GetChatHistoryResponse.parse(serializeRows(messages)));
 });
 
 router.delete("/chat/history", async (req, res): Promise<void> => {
-  const userId = (req as any).userId as string;
+  const userId = req.userId;
   await db.delete(chatMessagesTable).where(eq(chatMessagesTable.clerkUserId, userId));
   res.sendStatus(204);
 });
 
 router.post("/chat", async (req, res): Promise<void> => {
-  const userId = (req as any).userId as string;
+  const userId = req.userId;
   const parsed = SendChatMessageBody.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: parsed.error.message });

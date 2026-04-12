@@ -77,7 +77,7 @@ function ProtectedRoute({ component: Component }: { component: React.ComponentTy
         <Component />
       </Show>
       <Show when="signed-out">
-        <Redirect to="/" />
+        <Redirect to="/sign-in" />
       </Show>
     </>
   );

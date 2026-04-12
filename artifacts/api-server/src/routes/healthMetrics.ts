@@ -17,7 +17,7 @@ import {
 const router: IRouter = Router();
 
 router.get("/health-metrics", async (req, res): Promise<void> => {
-  const userId = (req as any).userId as string;
+  const userId = req.userId;
   const query = ListHealthMetricsQueryParams.safeParse(req.query);
   if (!query.success) {
     res.status(400).json({ error: query.error.message });
@@ -37,7 +37,7 @@ router.get("/health-metrics", async (req, res): Promise<void> => {
 });
 
 router.post("/health-metrics", async (req, res): Promise<void> => {
-  const userId = (req as any).userId as string;
+  const userId = req.userId;
   const parsed = CreateHealthMetricBody.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: parsed.error.message });
@@ -58,7 +58,7 @@ router.post("/health-metrics", async (req, res): Promise<void> => {
 });
 
 router.get("/health-metrics/:id", async (req, res): Promise<void> => {
-  const userId = (req as any).userId as string;
+  const userId = req.userId;
   const params = GetHealthMetricParams.safeParse({ id: Number(Array.isArray(req.params.id) ? req.params.id[0] : req.params.id) });
   if (!params.success) {
     res.status(400).json({ error: params.error.message });
@@ -75,7 +75,7 @@ router.get("/health-metrics/:id", async (req, res): Promise<void> => {
 });
 
 router.patch("/health-metrics/:id", async (req, res): Promise<void> => {
-  const userId = (req as any).userId as string;
+  const userId = req.userId;
   const params = UpdateHealthMetricParams.safeParse({ id: Number(Array.isArray(req.params.id) ? req.params.id[0] : req.params.id) });
   if (!params.success) {
     res.status(400).json({ error: params.error.message });
@@ -109,7 +109,7 @@ router.patch("/health-metrics/:id", async (req, res): Promise<void> => {
 });
 
 router.delete("/health-metrics/:id", async (req, res): Promise<void> => {
-  const userId = (req as any).userId as string;
+  const userId = req.userId;
   const params = DeleteHealthMetricParams.safeParse({ id: Number(Array.isArray(req.params.id) ? req.params.id[0] : req.params.id) });
   if (!params.success) {
     res.status(400).json({ error: params.error.message });

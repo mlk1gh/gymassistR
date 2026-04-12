@@ -44,7 +44,7 @@ function requireAuth(req: express.Request, res: express.Response, next: express.
     res.status(401).json({ error: "Unauthorized" });
     return;
   }
-  (req as any).userId = userId;
+  req.userId = userId;
   next();
 }
 
