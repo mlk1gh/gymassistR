@@ -68,22 +68,25 @@ export function AppLayout({ children }: { children: ReactNode }) {
               </Link>
             );
           })}
-          {isAdmin && (
+        </nav>
+
+        {isAdmin && (
+          <div className="shrink-0 px-4 pb-2 hidden md:block">
             <Link
               href="/admin"
               className={cn(
-                "flex items-center gap-3 px-3 py-2.5 rounded-md font-medium transition-all group relative overflow-hidden",
+                "flex items-center gap-3 px-3 py-2 rounded-md font-medium transition-all text-xs border",
                 location === "/admin" || location.startsWith("/admin")
-                  ? "text-primary-foreground bg-primary"
-                  : "text-muted-foreground hover:text-foreground hover:bg-secondary"
+                  ? "text-primary-foreground bg-primary border-primary"
+                  : "text-muted-foreground hover:text-foreground border-border hover:bg-secondary"
               )}
               data-testid="nav-admin"
             >
-              <ShieldCheck className="w-5 h-5 relative z-10" />
-              <span className="relative z-10 whitespace-nowrap">Admin</span>
+              <ShieldCheck className="w-4 h-4 shrink-0" />
+              <span className="whitespace-nowrap">Admin Panel</span>
             </Link>
-          )}
-        </nav>
+          </div>
+        )}
 
         {user && (
           <div className="shrink-0 px-4 pb-4 pt-2 border-t border-border mt-auto">
