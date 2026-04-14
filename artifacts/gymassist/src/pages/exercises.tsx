@@ -14,7 +14,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Trash2, Pencil, Search } from "lucide-react";
+import { Plus, Trash2, Pencil, Search, Play, X } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -30,6 +30,7 @@ const exerciseSchema = z.object({
   sets: z.number({ coerce: true }).optional(),
   reps: z.number({ coerce: true }).optional(),
   durationSeconds: z.number({ coerce: true }).optional(),
+  videoUrl: z.string().optional(),
 });
 type ExerciseForm = z.infer<typeof exerciseSchema>;
 
@@ -41,10 +42,70 @@ const difficultyColors: Record<string, string> = {
 
 const MUSCLE_GROUPS = ["Legs", "Back", "Chest", "Shoulders", "Arms", "Core", "Full Body", "Cardio"];
 
+function getYouTubeEmbedUrl(url: string): string | null {
+  try {
+    const u = new URL(url);
+    let videoId: string | null = null;
+    if (u.hostname.includes("youtube.com")) {
+      videoId = u.searchParams.get("v");
+    } else if (u.hostname === "youtu.be") {
+      videoId = u.pathname.slice(1).split("?")[0];
+    }
+    return videoId ? `https://www.youtube.com/embed/${videoId}?autoplay=1&rel=0` : null;
+  } catch {
+    return null;
+  }
+}
+
+function getYouTubeThumbnail(url: string): string | null {
+  try {
+    const u = new URL(url);
+    let videoId: string | null = null;
+    if (u.hostname.includes("youtube.com")) {
+      videoId = u.searchParams.get("v");
+    } else if (u.hostname === "youtu.be") {
+      videoId = u.pathname.slice(1).split("?")[0];
+    }
+    return videoId ? `https://img.youtube.com/vi/${videoId}/mqdefault.jpg` : null;
+  } catch {
+    return null;
+  }
+}
+
+function VideoModal({ url, title, onClose }: { url: string; title: string; onClose: () => void }) {
+  const embedUrl = getYouTubeEmbedUrl(url);
+  return (
+    <Dialog open onOpenChange={(v) => !v && onClose()}>
+      <DialogContent className="max-w-2xl p-0 overflow-hidden bg-black border-border">
+        <div className="flex items-center justify-between px-4 py-2 bg-card">
+          <p className="text-sm font-medium text-foreground truncate">{title}</p>
+          <button onClick={onClose} className="text-muted-foreground hover:text-foreground transition-colors">
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+        {embedUrl ? (
+          <div className="relative w-full" style={{ paddingBottom: "56.25%" }}>
+            <iframe
+              src={embedUrl}
+              title={title}
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+              allowFullScreen
+              className="absolute inset-0 w-full h-full"
+            />
+          </div>
+        ) : (
+          <div className="flex items-center justify-center h-48 text-muted-foreground text-sm">Invalid video URL</div>
+        )}
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 export default function ExercisesPage() {
   const qc = useQueryClient();
   const [search, setSearch] = useState("");
   const [filterGroup, setFilterGroup] = useState<string>("all");
+  const [videoExercise, setVideoExercise] = useState<{ url: string; title: string } | null>(null);
 
   const exercises = useListExercises();
   const createMutation = useCreateExercise();
@@ -61,12 +122,12 @@ export default function ExercisesPage() {
   });
 
   const openCreate = () => {
-    reset({ difficulty: "intermediate", name: "", muscleGroup: "", description: "", equipment: "", instructions: "" });
+    reset({ difficulty: "intermediate", name: "", muscleGroup: "", description: "", equipment: "", instructions: "", videoUrl: "" });
     setEditingId(null);
     setModalOpen(true);
   };
 
-  const openEdit = (e: { id: number; name: string; description?: string | null; muscleGroup: string; difficulty: string; equipment?: string | null; instructions?: string | null; sets?: number | null; reps?: number | null; durationSeconds?: number | null }) => {
+  const openEdit = (e: { id: number; name: string; description?: string | null; muscleGroup: string; difficulty: string; equipment?: string | null; instructions?: string | null; sets?: number | null; reps?: number | null; durationSeconds?: number | null; videoUrl?: string | null }) => {
     reset({
       name: e.name,
       description: e.description ?? "",
@@ -77,6 +138,7 @@ export default function ExercisesPage() {
       sets: e.sets ?? undefined,
       reps: e.reps ?? undefined,
       durationSeconds: e.durationSeconds ?? undefined,
+      videoUrl: e.videoUrl ?? "",
     });
     setEditingId(e.id);
     setModalOpen(true);
@@ -88,6 +150,7 @@ export default function ExercisesPage() {
       sets: data.sets || undefined,
       reps: data.reps || undefined,
       durationSeconds: data.durationSeconds || undefined,
+      videoUrl: data.videoUrl || undefined,
     };
     if (editingId != null) {
       updateMutation.mutate(
@@ -195,44 +258,70 @@ export default function ExercisesPage() {
           </Card>
         ) : (
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {filtered.map((ex) => (
-              <Card key={ex.id} className="bg-card border-border group" data-testid={`exercise-card-${ex.id}`}>
-                <CardContent className="p-4">
-                  <div className="flex items-start justify-between mb-2">
-                    <div className="flex-1 min-w-0">
-                      <p className="font-semibold text-foreground truncate">{ex.name}</p>
-                      <div className="flex items-center gap-2 mt-1 flex-wrap">
-                        <span className="text-xs text-muted-foreground bg-secondary px-2 py-0.5 rounded">{ex.muscleGroup}</span>
-                        <span className={`text-xs px-2 py-0.5 rounded font-medium ${difficultyColors[ex.difficulty] ?? ""}`}>{ex.difficulty}</span>
+            {filtered.map((ex) => {
+              const thumbnail = ex.videoUrl ? getYouTubeThumbnail(ex.videoUrl) : null;
+              return (
+                <Card key={ex.id} className="bg-card border-border group overflow-hidden" data-testid={`exercise-card-${ex.id}`}>
+                  {thumbnail && (
+                    <div
+                      className="relative w-full cursor-pointer overflow-hidden"
+                      style={{ paddingBottom: "56.25%" }}
+                      onClick={() => ex.videoUrl && setVideoExercise({ url: ex.videoUrl, title: ex.name })}
+                    >
+                      <img src={thumbnail} alt={ex.name} className="absolute inset-0 w-full h-full object-cover" />
+                      <div className="absolute inset-0 bg-black/30 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                        <div className="w-12 h-12 rounded-full bg-white/90 flex items-center justify-center shadow-lg">
+                          <Play className="w-5 h-5 text-black ml-0.5" fill="black" />
+                        </div>
                       </div>
                     </div>
-                    <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0 ml-2">
-                      <Button size="sm" variant="ghost" className="w-7 h-7 p-0" onClick={() => openEdit(ex)} data-testid={`edit-exercise-${ex.id}`}>
-                        <Pencil className="w-3.5 h-3.5" />
-                      </Button>
-                      <Button size="sm" variant="ghost" className="w-7 h-7 p-0 hover:text-destructive" onClick={() => setDeleteId(ex.id)} data-testid={`delete-exercise-${ex.id}`}>
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </Button>
-                    </div>
-                  </div>
-                  {ex.description && (
-                    <p className="text-xs text-muted-foreground line-clamp-2 mb-2">{ex.description}</p>
                   )}
-                  <div className="flex flex-wrap gap-2 text-xs text-muted-foreground mt-2">
-                    {ex.sets != null && <span>{ex.sets} sets</span>}
-                    {ex.reps != null && <span>{ex.reps} reps</span>}
-                    {ex.durationSeconds != null && <span>{ex.durationSeconds}s</span>}
-                    {ex.equipment && <span className="italic">{ex.equipment}</span>}
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
+                  <CardContent className="p-4">
+                    <div className="flex items-start justify-between mb-2">
+                      <div className="flex-1 min-w-0">
+                        <p className="font-semibold text-foreground truncate">{ex.name}</p>
+                        <div className="flex items-center gap-2 mt-1 flex-wrap">
+                          <span className="text-xs text-muted-foreground bg-secondary px-2 py-0.5 rounded">{ex.muscleGroup}</span>
+                          <span className={`text-xs px-2 py-0.5 rounded font-medium ${difficultyColors[ex.difficulty] ?? ""}`}>{ex.difficulty}</span>
+                        </div>
+                      </div>
+                      <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0 ml-2">
+                        {ex.videoUrl && (
+                          <Button size="sm" variant="ghost" className="w-7 h-7 p-0 text-primary" onClick={() => ex.videoUrl && setVideoExercise({ url: ex.videoUrl, title: ex.name })}>
+                            <Play className="w-3.5 h-3.5" />
+                          </Button>
+                        )}
+                        <Button size="sm" variant="ghost" className="w-7 h-7 p-0" onClick={() => openEdit(ex)} data-testid={`edit-exercise-${ex.id}`}>
+                          <Pencil className="w-3.5 h-3.5" />
+                        </Button>
+                        <Button size="sm" variant="ghost" className="w-7 h-7 p-0 hover:text-destructive" onClick={() => setDeleteId(ex.id)} data-testid={`delete-exercise-${ex.id}`}>
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </Button>
+                      </div>
+                    </div>
+                    {ex.description && (
+                      <p className="text-xs text-muted-foreground line-clamp-2 mb-2">{ex.description}</p>
+                    )}
+                    <div className="flex flex-wrap gap-2 text-xs text-muted-foreground mt-2">
+                      {ex.sets != null && <span>{ex.sets} sets</span>}
+                      {ex.reps != null && <span>{ex.reps} reps</span>}
+                      {ex.durationSeconds != null && <span>{ex.durationSeconds}s</span>}
+                      {ex.equipment && <span className="italic">{ex.equipment}</span>}
+                    </div>
+                  </CardContent>
+                </Card>
+              );
+            })}
           </div>
         )}
       </div>
 
+      {videoExercise && (
+        <VideoModal url={videoExercise.url} title={videoExercise.title} onClose={() => setVideoExercise(null)} />
+      )}
+
       <Dialog open={modalOpen} onOpenChange={setModalOpen}>
-        <DialogContent className="bg-card border-border max-w-lg">
+        <DialogContent className="bg-card border-border max-w-lg max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>{editingId != null ? "Edit Exercise" : "Add Exercise"}</DialogTitle>
           </DialogHeader>
@@ -303,6 +392,11 @@ export default function ExercisesPage() {
               <div className="col-span-2">
                 <Label htmlFor="instructions">Instructions</Label>
                 <Input id="instructions" {...register("instructions")} placeholder="How to perform this exercise" className="mt-1" />
+              </div>
+              <div className="col-span-2">
+                <Label htmlFor="videoUrl">YouTube Video URL</Label>
+                <Input id="videoUrl" {...register("videoUrl")} placeholder="https://www.youtube.com/watch?v=..." className="mt-1" />
+                <p className="text-xs text-muted-foreground mt-1">Paste a YouTube link to show a video preview on the exercise card.</p>
               </div>
             </div>
             <DialogFooter>

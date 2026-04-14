@@ -34,7 +34,7 @@ type UserRow = { clerkUserId: string; email: string; name: string; imageUrl: str
 type Workout = { id: number; name: string; goal: string; durationMinutes: number; difficulty: string; completed: boolean; scheduledAt: string | null; createdAt: string };
 type Metric = { id: number; type: string; value: number; unit: string; notes: string | null; loggedAt: string };
 type UserProfile = UserRow & { workouts: Workout[]; healthMetrics: Metric[]; chatMessageCount: number };
-type Exercise = { id: number; name: string; muscleGroup: string; difficulty: string; equipment: string | null; description: string | null; instructions: string | null; sets: number | null; reps: number | null; durationSeconds: number | null };
+type Exercise = { id: number; name: string; muscleGroup: string; difficulty: string; equipment: string | null; description: string | null; instructions: string | null; sets: number | null; reps: number | null; durationSeconds: number | null; videoUrl: string | null };
 
 function Avatar({ name, email, imageUrl, size = "md" }: { name: string; email: string; imageUrl: string; size?: "sm" | "md" | "lg" }) {
   const sz = size === "sm" ? "w-7 h-7 text-xs" : size === "lg" ? "w-12 h-12 text-base" : "w-9 h-9 text-sm";
@@ -413,6 +413,7 @@ function ExerciseFormDialog({ exercise, onClose }: { exercise?: Exercise | null;
     sets: exercise?.sets?.toString() ?? "",
     reps: exercise?.reps?.toString() ?? "",
     durationSeconds: exercise?.durationSeconds?.toString() ?? "",
+    videoUrl: exercise?.videoUrl ?? "",
   });
 
   const set = (k: string, v: string) => setForm((f) => ({ ...f, [k]: v }));
@@ -429,6 +430,7 @@ function ExerciseFormDialog({ exercise, onClose }: { exercise?: Exercise | null;
         sets: form.sets ? parseInt(form.sets) : null,
         reps: form.reps ? parseInt(form.reps) : null,
         durationSeconds: form.durationSeconds ? parseInt(form.durationSeconds) : null,
+        videoUrl: form.videoUrl || null,
       };
       return isEdit
         ? apiFetch(`/api/exercises/${exercise!.id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) })
@@ -488,6 +490,11 @@ function ExerciseFormDialog({ exercise, onClose }: { exercise?: Exercise | null;
             <div className="col-span-2">
               <label className="text-xs font-medium text-muted-foreground mb-1 block">Instructions</label>
               <Textarea value={form.instructions} onChange={(e) => set("instructions", e.target.value)} placeholder="Step-by-step instructions…" rows={3} />
+            </div>
+            <div className="col-span-2">
+              <label className="text-xs font-medium text-muted-foreground mb-1 block">YouTube Video URL</label>
+              <Input value={form.videoUrl} onChange={(e) => set("videoUrl", e.target.value)} placeholder="https://www.youtube.com/watch?v=..." />
+              <p className="text-xs text-muted-foreground mt-1">Optional — paste a YouTube link to add a video to this exercise.</p>
             </div>
           </div>
         </div>

@@ -140,6 +140,7 @@ export const ListExercisesResponseItem = zod.object({
   sets: zod.number().nullish(),
   reps: zod.number().nullish(),
   durationSeconds: zod.number().nullish(),
+  videoUrl: zod.string().nullish(),
   createdAt: zod.string(),
   updatedAt: zod.string(),
 });
@@ -158,6 +159,7 @@ export const CreateExerciseBody = zod.object({
   sets: zod.number().optional(),
   reps: zod.number().optional(),
   durationSeconds: zod.number().optional(),
+  videoUrl: zod.string().optional(),
 });
 
 /**
@@ -178,6 +180,7 @@ export const GetExerciseResponse = zod.object({
   sets: zod.number().nullish(),
   reps: zod.number().nullish(),
   durationSeconds: zod.number().nullish(),
+  videoUrl: zod.string().nullish(),
   createdAt: zod.string(),
   updatedAt: zod.string(),
 });
@@ -199,6 +202,7 @@ export const UpdateExerciseBody = zod.object({
   sets: zod.number().optional(),
   reps: zod.number().optional(),
   durationSeconds: zod.number().optional(),
+  videoUrl: zod.string().optional(),
 });
 
 export const UpdateExerciseResponse = zod.object({
@@ -212,6 +216,7 @@ export const UpdateExerciseResponse = zod.object({
   sets: zod.number().nullish(),
   reps: zod.number().nullish(),
   durationSeconds: zod.number().nullish(),
+  videoUrl: zod.string().nullish(),
   createdAt: zod.string(),
   updatedAt: zod.string(),
 });

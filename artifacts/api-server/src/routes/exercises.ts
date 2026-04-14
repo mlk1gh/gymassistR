@@ -56,6 +56,7 @@ router.post("/exercises", async (req, res): Promise<void> => {
     sets: data.sets ?? null,
     reps: data.reps ?? null,
     durationSeconds: data.durationSeconds ?? null,
+    videoUrl: data.videoUrl ?? null,
   }).returning();
 
   res.status(201).json(GetExerciseResponse.parse(serializeRow(exercise)));
@@ -102,6 +103,7 @@ router.patch("/exercises/:id", async (req, res): Promise<void> => {
       ...(data.sets !== undefined && { sets: data.sets }),
       ...(data.reps !== undefined && { reps: data.reps }),
       ...(data.durationSeconds !== undefined && { durationSeconds: data.durationSeconds }),
+      ...(data.videoUrl !== undefined && { videoUrl: data.videoUrl }),
     })
     .where(eq(exercisesTable.id, params.data.id))
     .returning();

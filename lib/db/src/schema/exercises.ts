@@ -13,6 +13,7 @@ export const exercisesTable = pgTable("exercises", {
   sets: integer("sets"),
   reps: integer("reps"),
   durationSeconds: integer("duration_seconds"),
+  videoUrl: text("video_url"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),
 });
