@@ -16,7 +16,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Plus, CheckCircle, Clock, Trash2, Pencil } from "lucide-react";
+import { Plus, CheckCircle, Clock, Trash2, Pencil, RotateCcw } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -135,6 +135,19 @@ export default function WorkoutsPage() {
     );
   };
 
+  const handleUncomplete = (id: number) => {
+    updateMutation.mutate(
+      { id, data: { completed: false } },
+      {
+        onSuccess: () => {
+          qc.invalidateQueries({ queryKey: getListWorkoutsQueryKey() });
+          toast({ title: "Workout marked as active" });
+        },
+        onError: () => toast({ title: "Failed to update workout", variant: "destructive" }),
+      }
+    );
+  };
+
   const data = workouts.data ?? [];
 
   return (
@@ -192,7 +205,18 @@ export default function WorkoutsPage() {
                     </div>
                   </div>
                   <div className="flex items-center gap-2 shrink-0">
-                    {!w.completed && (
+                    {w.completed ? (
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="gap-1 text-muted-foreground hover:text-foreground"
+                        onClick={() => handleUncomplete(w.id)}
+                        disabled={updateMutation.isPending}
+                        data-testid={`uncomplete-workout-${w.id}`}
+                      >
+                        <RotateCcw className="w-3.5 h-3.5" /> Undo
+                      </Button>
+                    ) : (
                       <Button
                         size="sm"
                         variant="outline"
