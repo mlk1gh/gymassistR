@@ -10,7 +10,7 @@ import { AppLayout } from "@/components/layout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
-import { Send, Trash2, Mic, MicOff, Bot, User } from "lucide-react";
+import { Send, Trash2, Mic, MicOff, Bot, User, Zap } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
@@ -109,7 +109,10 @@ export default function ChatPage() {
         <div className="flex items-center justify-between mb-4 shrink-0">
           <div>
             <h1 className="text-2xl font-bold tracking-tight">AI Coach</h1>
-            <p className="text-muted-foreground text-sm mt-1">Ask anything about fitness, training, or nutrition.</p>
+            <p className="text-muted-foreground text-sm mt-1 flex items-center gap-1.5">
+              <Zap className="w-3.5 h-3.5 text-primary" />
+              Knows your workouts & health data — can create plans and log metrics for you
+            </p>
           </div>
           {messages.length > 0 && (
             <Button
@@ -140,23 +143,27 @@ export default function ChatPage() {
                 </div>
                 <div>
                   <p className="font-semibold text-foreground">GymAssist Coach</p>
-                  <p className="text-muted-foreground text-sm mt-1 max-w-xs">
-                    Ask me about workout programs, exercise form, nutrition strategies, or recovery techniques.
+                  <p className="text-muted-foreground text-sm mt-1 max-w-sm">
+                    I have access to your workouts, health metrics, and exercise library. I can create plans, log data, and give advice tailored to you.
                   </p>
                 </div>
-                <div className="flex flex-wrap gap-2 justify-center mt-2">
+                <div className="grid grid-cols-2 gap-2 mt-3 w-full max-w-sm">
                   {[
-                    "Build a 3-day workout split",
-                    "How much protein do I need?",
-                    "Best exercises for back pain",
+                    { label: "Show my workout plans", icon: "📋" },
+                    { label: "Create a push day for me", icon: "💪" },
+                    { label: "Log my weight: 75 kg", icon: "⚖️" },
+                    { label: "What exercises are in my plans?", icon: "🏋️" },
+                    { label: "How am I tracking this week?", icon: "📈" },
+                    { label: "Suggest chest exercises to add", icon: "🎯" },
                   ].map((q) => (
                     <button
-                      key={q}
-                      onClick={() => sendMessage(q)}
-                      className="text-xs px-3 py-1.5 rounded-full border border-border text-muted-foreground hover:text-foreground hover:border-primary/50 transition-colors"
-                      data-testid={`suggestion-${q.toLowerCase().replace(/\s+/g, "-")}`}
+                      key={q.label}
+                      onClick={() => sendMessage(q.label)}
+                      className="text-xs px-3 py-2.5 rounded-xl border border-border text-left text-muted-foreground hover:text-foreground hover:border-primary/50 hover:bg-primary/5 transition-colors flex items-center gap-1.5"
+                      data-testid={`suggestion-${q.label.toLowerCase().replace(/\s+/g, "-")}`}
                     >
-                      {q}
+                      <span>{q.icon}</span>
+                      <span>{q.label}</span>
                     </button>
                   ))}
                 </div>
