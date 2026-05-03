@@ -29,7 +29,6 @@ MIDDLEWARE = [
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
-    "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
 
 ROOT_URLCONF = "gymadmin.urls"
@@ -78,8 +77,22 @@ STATICFILES_STORAGE = "whitenoise.storage.CompressedStaticFilesStorage"
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
-CSRF_TRUSTED_ORIGINS = [
-    f"https://{host}" for host in os.environ.get("REPLIT_DOMAINS", "").split(",") if host
-] + ["http://localhost", "http://127.0.0.1"]
+_trusted = set()
+for _h in os.environ.get("REPLIT_DOMAINS", "").split(","):
+    if _h.strip():
+        _trusted.add(f"https://{_h.strip()}")
+_dev = os.environ.get("REPLIT_DEV_DOMAIN", "")
+if _dev:
+    _trusted.add(f"https://{_dev}")
+
+CSRF_TRUSTED_ORIGINS = list(_trusted) + ["http://localhost", "http://127.0.0.1"]
+
+CSRF_COOKIE_SAMESITE = "None"
+CSRF_COOKIE_SECURE = True
+SESSION_COOKIE_SAMESITE = "None"
+SESSION_COOKIE_SECURE = True
+
+USE_X_FORWARDED_HOST = True
+SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 
 LOGIN_URL = "/django-admin/login/"
