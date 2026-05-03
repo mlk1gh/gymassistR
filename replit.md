@@ -15,20 +15,22 @@ pnpm workspace monorepo using TypeScript. Each package manages its own dependenc
 - **Validation**: Zod (`zod/v4`), `drizzle-zod`
 - **API codegen**: Orval (from OpenAPI spec)
 - **Build**: esbuild (CJS bundle)
-- **Auth**: Clerk (`@clerk/express` server, `@clerk/react` client)
+- **Auth**: Custom JWT (`jsonwebtoken` + `bcryptjs` on server, `AuthContext` on client)
 
 ## Authentication
 
-GymAssist uses Clerk for authentication with full proxy support.
+GymAssist uses custom JWT authentication (email + password).
 
 - `/` redirects unauthenticated users to `/sign-in`; signed-in users go to `/dashboard`
-- Sign-in at `/sign-in`, sign-up at `/sign-up` (Clerk hosted UI)
-- All app routes (`/dashboard`, `/workouts`, `/exercises`, `/health`, `/chat`) are protected — unauthenticated access redirects to `/sign-in`
-- API routes under `/api/*` require a valid Clerk session (returns 401 if not)
-- Data is scoped per user via `clerkUserId` column on workouts, healthMetrics, chatMessages tables
-- Exercises table is shared/global (no userId — shared library)
-- Sign-out button in sidebar, redirects to `/sign-in`
-- Manage users via the Auth pane in the workspace toolbar
+- Sign-in at `/sign-in`, sign-up at `/sign-up` — custom email/password forms
+- All app routes are protected via `AuthProvider` + `ProtectedRoute` (redirect to `/sign-in`)
+- API routes under `/api/*` require `Authorization: Bearer <token>` header (returns 401 if missing)
+- Public auth routes: `POST /api/auth/register`, `POST /api/auth/login`, `GET /api/auth/me`
+- JWT payload: `{ userId, email, name, isAdmin }` — signed with `SESSION_SECRET`, expires 7d
+- Token stored in `localStorage` as `gymassist_token`; `setAuthTokenGetter` wires it to all generated API hooks
+- Data is scoped per user via `clerkUserId` column (stores `String(user.id)`) on workouts, healthMetrics, chatMessages tables
+- Admin check: `isAdmin` flag in `users` table + `ADMIN_EMAILS` env var override on login
+- Ban = set `banned: true` in users table; banned users cannot log in
 
 ## App Structure
 

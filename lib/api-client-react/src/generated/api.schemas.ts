@@ -64,6 +64,8 @@ export interface Exercise {
   reps?: number | null;
   /** @nullable */
   durationSeconds?: number | null;
+  /** @nullable */
+  videoUrl?: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -78,6 +80,7 @@ export interface CreateExerciseBody {
   sets?: number;
   reps?: number;
   durationSeconds?: number;
+  videoUrl?: string;
 }
 
 export interface UpdateExerciseBody {
@@ -90,6 +93,7 @@ export interface UpdateExerciseBody {
   sets?: number;
   reps?: number;
   durationSeconds?: number;
+  videoUrl?: string;
 }
 
 export interface HealthMetric {

@@ -41,10 +41,10 @@ type WorkoutExercise = {
 };
 
 type GlobalExercise = {
-  id: number; name: string; description: string | null; muscleGroup: string;
-  difficulty: string; equipment: string | null; instructions: string | null;
-  sets: number | null; reps: number | null; durationSeconds: number | null;
-  videoUrl: string | null;
+  id: number; name: string; description?: string | null; muscleGroup: string;
+  difficulty: string; equipment?: string | null; instructions?: string | null;
+  sets?: number | null; reps?: number | null; durationSeconds?: number | null;
+  videoUrl?: string | null;
 };
 
 const exerciseSchema = z.object({

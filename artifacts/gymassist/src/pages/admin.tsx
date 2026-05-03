@@ -13,15 +13,24 @@ import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import {
   Users, Dumbbell, HeartPulse, MessageSquareText, ShieldAlert,
-  UserPlus, Trash2, Ban, ShieldCheck, Eye, Mail, Clock,
+  Trash2, Ban, ShieldCheck, Eye,
   LayoutDashboard, Pencil, Plus, X, ChevronRight,
 } from "lucide-react";
 import { formatDistanceToNow, format } from "date-fns";
 
+import { useAuth, getToken } from "@/lib/auth";
+
 const BASE = import.meta.env.BASE_URL?.replace(/\/$/, "") || "";
 
 async function apiFetch<T>(path: string, options?: RequestInit): Promise<T> {
-  const res = await fetch(`${BASE}${path}`, { credentials: "include", ...options });
+  const token = getToken();
+  const res = await fetch(`${BASE}${path}`, {
+    ...options,
+    headers: {
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      ...(options?.headers ?? {}),
+    },
+  });
   if (!res.ok) {
     const err = await res.json().catch(() => ({ error: res.statusText }));
     throw new Error(err?.error ?? res.statusText);
@@ -30,18 +39,16 @@ async function apiFetch<T>(path: string, options?: RequestInit): Promise<T> {
 }
 
 type Summary = { totalUsers: number; totalWorkouts: number; totalHealthEntries: number; totalChatMessages: number };
-type UserRow = { clerkUserId: string; email: string; name: string; imageUrl: string; banned: boolean; createdAt: string | null; lastSignInAt: string | null; workoutCount: number; healthCount: number; chatCount: number; lastActivity: string | null };
+type UserRow = { userId: string; email: string; name: string; isAdmin: boolean; banned: boolean; createdAt: string | null; lastLoginAt: string | null; workoutCount: number; healthCount: number; chatCount: number; lastActivity: string | null };
 type Workout = { id: number; name: string; goal: string; durationMinutes: number; difficulty: string; completed: boolean; scheduledAt: string | null; createdAt: string };
 type Metric = { id: number; type: string; value: number; unit: string; notes: string | null; loggedAt: string };
 type UserProfile = UserRow & { workouts: Workout[]; healthMetrics: Metric[]; chatMessageCount: number };
 type Exercise = { id: number; name: string; muscleGroup: string; difficulty: string; equipment: string | null; description: string | null; instructions: string | null; sets: number | null; reps: number | null; durationSeconds: number | null; videoUrl: string | null };
 
-function Avatar({ name, email, imageUrl, size = "md" }: { name: string; email: string; imageUrl: string; size?: "sm" | "md" | "lg" }) {
+function Avatar({ name, email, size = "md" }: { name: string; email: string; size?: "sm" | "md" | "lg" }) {
   const sz = size === "sm" ? "w-7 h-7 text-xs" : size === "lg" ? "w-12 h-12 text-base" : "w-9 h-9 text-sm";
   const initial = (name?.[0] ?? email?.[0] ?? "U").toUpperCase();
-  return imageUrl ? (
-    <img src={imageUrl} alt={name} className={`${sz} rounded-full object-cover shrink-0`} />
-  ) : (
+  return (
     <div className={`${sz} rounded-full bg-primary/20 flex items-center justify-center font-bold text-primary shrink-0`}>{initial}</div>
   );
 }
@@ -81,32 +88,6 @@ function ConfirmDialog({ open, title, description, onConfirm, onCancel, danger }
   );
 }
 
-function InviteDialog({ open, onClose }: { open: boolean; onClose: () => void }) {
-  const [email, setEmail] = useState("");
-  const { toast } = useToast();
-  const mutation = useMutation({
-    mutationFn: () => apiFetch("/api/admin/invitations", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ email }) }),
-    onSuccess: () => { toast({ title: "Invitation sent", description: `An invite was sent to ${email}` }); setEmail(""); onClose(); },
-    onError: (e: Error) => toast({ title: "Failed", description: e.message, variant: "destructive" }),
-  });
-  return (
-    <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
-      <DialogContent>
-        <DialogHeader><DialogTitle>Invite User</DialogTitle></DialogHeader>
-        <div className="space-y-3">
-          <p className="text-sm text-muted-foreground">Send an invitation email to a new user.</p>
-          <Input placeholder="user@example.com" value={email} onChange={(e) => setEmail(e.target.value)} onKeyDown={(e) => e.key === "Enter" && mutation.mutate()} />
-        </div>
-        <DialogFooter className="gap-2">
-          <Button variant="outline" onClick={onClose}>Cancel</Button>
-          <Button onClick={() => mutation.mutate()} disabled={!email.trim() || mutation.isPending}>
-            {mutation.isPending ? "Sending…" : "Send Invitation"}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
-  );
-}
 
 function UserProfileSheet({ userId, onClose }: { userId: string; onClose: () => void }) {
   const qc = useQueryClient();
@@ -146,7 +127,7 @@ function UserProfileSheet({ userId, onClose }: { userId: string; onClose: () => 
             </SheetHeader>
 
             <div className="flex items-center gap-4">
-              <Avatar name={profile.name} email={profile.email} imageUrl={profile.imageUrl} size="lg" />
+              <Avatar name={profile.name} email={profile.email} size="lg" />
               <div className="min-w-0">
                 <p className="font-semibold text-foreground">{profile.name}</p>
                 <p className="text-sm text-muted-foreground truncate">{profile.email}</p>
@@ -160,8 +141,8 @@ function UserProfileSheet({ userId, onClose }: { userId: string; onClose: () => 
                 <p className="font-medium">{profile.createdAt ? format(new Date(profile.createdAt), "MMM d, yyyy") : "—"}</p>
               </div>
               <div className="bg-secondary/50 rounded-lg p-3">
-                <p className="text-xs text-muted-foreground mb-0.5">Last sign in</p>
-                <p className="font-medium">{profile.lastSignInAt ? formatDistanceToNow(new Date(profile.lastSignInAt), { addSuffix: true }) : "Never"}</p>
+                <p className="text-xs text-muted-foreground mb-0.5">Last login</p>
+                <p className="font-medium">{profile.lastLoginAt ? formatDistanceToNow(new Date(profile.lastLoginAt), { addSuffix: true }) : "Never"}</p>
               </div>
             </div>
 
@@ -240,12 +221,13 @@ function UserProfileSheet({ userId, onClose }: { userId: string; onClose: () => 
   );
 }
 
-function UsersTab({ selfId }: { selfId?: string }) {
+function UsersTab() {
+  const { user: selfUser } = useAuth();
+  const selfId = selfUser?.userId;
   const qc = useQueryClient();
   const { toast } = useToast();
   const [search, setSearch] = useState("");
   const [profileUserId, setProfileUserId] = useState<string | null>(null);
-  const [inviteOpen, setInviteOpen] = useState(false);
   const [confirm, setConfirm] = useState<{ type: "delete" | "ban" | "unban"; userId: string; name: string } | null>(null);
 
   const { data, isLoading } = useQuery<{ users: UserRow[] }>({ queryKey: ["admin-users"], queryFn: () => apiFetch("/api/admin/users") });
@@ -285,9 +267,6 @@ function UsersTab({ selfId }: { selfId?: string }) {
     <div className="space-y-4">
       <div className="flex items-center gap-3">
         <Input placeholder="Search by name or email…" value={search} onChange={(e) => setSearch(e.target.value)} className="max-w-xs" />
-        <Button onClick={() => setInviteOpen(true)} size="sm" className="ml-auto gap-2">
-          <UserPlus className="w-4 h-4" /> Invite User
-        </Button>
       </div>
 
       <Card className="bg-card border-border">
@@ -311,12 +290,12 @@ function UsersTab({ selfId }: { selfId?: string }) {
                 </thead>
                 <tbody>
                   {users.map((user) => {
-                    const isSelf = user.clerkUserId === selfId;
+                    const isSelf = user.userId === selfId;
                     return (
-                      <tr key={user.clerkUserId} className="border-b border-border last:border-0 hover:bg-secondary/40 transition-colors">
+                      <tr key={user.userId} className="border-b border-border last:border-0 hover:bg-secondary/40 transition-colors">
                         <td className="px-5 py-3">
                           <div className="flex items-center gap-3">
-                            <Avatar name={user.name} email={user.email} imageUrl={user.imageUrl} size="sm" />
+                            <Avatar name={user.name} email={user.email} size="sm" />
                             <div className="min-w-0">
                               <div className="flex items-center gap-1.5">
                                 <p className="font-medium text-foreground truncate max-w-[150px]">{user.name}</p>
@@ -345,21 +324,21 @@ function UsersTab({ selfId }: { selfId?: string }) {
                         </td>
                         <td className="px-5 py-3">
                           <div className="flex items-center justify-end gap-1">
-                            <button onClick={() => setProfileUserId(user.clerkUserId)} className="p-1.5 rounded text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors" title="View profile">
+                            <button onClick={() => setProfileUserId(user.userId)} className="p-1.5 rounded text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors" title="View profile">
                               <Eye className="w-3.5 h-3.5" />
                             </button>
                             {!isSelf && (
                               <>
                                 {user.banned ? (
-                                  <button onClick={() => setConfirm({ type: "unban", userId: user.clerkUserId, name: user.name })} className="p-1.5 rounded text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors" title="Unban user">
+                                  <button onClick={() => setConfirm({ type: "unban", userId: user.userId, name: user.name })} className="p-1.5 rounded text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors" title="Unban user">
                                     <ShieldCheck className="w-3.5 h-3.5" />
                                   </button>
                                 ) : (
-                                  <button onClick={() => setConfirm({ type: "ban", userId: user.clerkUserId, name: user.name })} className="p-1.5 rounded text-muted-foreground hover:text-amber-500 hover:bg-amber-500/10 transition-colors" title="Ban user">
+                                  <button onClick={() => setConfirm({ type: "ban", userId: user.userId, name: user.name })} className="p-1.5 rounded text-muted-foreground hover:text-amber-500 hover:bg-amber-500/10 transition-colors" title="Ban user">
                                     <Ban className="w-3.5 h-3.5" />
                                   </button>
                                 )}
-                                <button onClick={() => setConfirm({ type: "delete", userId: user.clerkUserId, name: user.name })} className="p-1.5 rounded text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors" title="Delete user">
+                                <button onClick={() => setConfirm({ type: "delete", userId: user.userId, name: user.name })} className="p-1.5 rounded text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors" title="Delete user">
                                   <Trash2 className="w-3.5 h-3.5" />
                                 </button>
                               </>
@@ -376,7 +355,6 @@ function UsersTab({ selfId }: { selfId?: string }) {
         </CardContent>
       </Card>
 
-      <InviteDialog open={inviteOpen} onClose={() => setInviteOpen(false)} />
       {profileUserId && <UserProfileSheet userId={profileUserId} onClose={() => setProfileUserId(null)} />}
       {confirm && (
         <ConfirmDialog

@@ -1,10 +1,14 @@
 import express, { type Express } from "express";
 import cors from "cors";
 import pinoHttp from "pino-http";
-import { clerkMiddleware, getAuth } from "@clerk/express";
-import { CLERK_PROXY_PATH, clerkProxyMiddleware } from "./middlewares/clerkProxyMiddleware";
+import jwt from "jsonwebtoken";
+import authRouter from "./routes/auth";
 import router from "./routes";
 import { logger } from "./lib/logger";
+
+function getJwtSecret(): string {
+  return process.env["SESSION_SECRET"] ?? "gymassist-fallback-secret";
+}
 
 const app: Express = express();
 
@@ -28,24 +32,34 @@ app.use(
   }),
 );
 
-app.use(CLERK_PROXY_PATH, clerkProxyMiddleware());
-
 app.use(cors({ credentials: true, origin: true }));
-
-app.use(clerkMiddleware());
-
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+// Public auth routes (register / login / me) — no token required
+app.use("/api", authRouter);
+
+// JWT middleware for all other /api routes
 function requireAuth(req: express.Request, res: express.Response, next: express.NextFunction): void {
-  const auth = getAuth(req);
-  const userId = auth?.userId;
-  if (!userId) {
+  const authHeader = req.headers["authorization"];
+  if (!authHeader?.startsWith("Bearer ")) {
     res.status(401).json({ error: "Unauthorized" });
     return;
   }
-  req.userId = userId;
-  next();
+  const token = authHeader.slice(7);
+  try {
+    const payload = jwt.verify(token, getJwtSecret()) as {
+      userId: string;
+      email: string;
+      name: string;
+      isAdmin: boolean;
+    };
+    req.userId = payload.userId;
+    req.userIsAdmin = payload.isAdmin;
+    next();
+  } catch {
+    res.status(401).json({ error: "Invalid or expired token" });
+  }
 }
 
 app.use("/api", requireAuth, router);

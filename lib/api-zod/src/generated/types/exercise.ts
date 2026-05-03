@@ -23,6 +23,8 @@ export interface Exercise {
   reps?: number | null;
   /** @nullable */
   durationSeconds?: number | null;
+  /** @nullable */
+  videoUrl?: string | null;
   createdAt: string;
   updatedAt: string;
 }

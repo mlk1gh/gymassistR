@@ -2,10 +2,7 @@ import { ReactNode } from "react";
 import { Link, useLocation } from "wouter";
 import { Activity, LayoutDashboard, Dumbbell, HeartPulse, MessageSquareText, LogOut, ShieldCheck } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useClerk, useUser } from "@clerk/react";
-import { useQuery } from "@tanstack/react-query";
-
-const BASE = import.meta.env.BASE_URL?.replace(/\/$/, "") || "";
+import { useAuth } from "@/lib/auth";
 
 const NAV_ITEMS = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -17,25 +14,12 @@ const NAV_ITEMS = [
 
 export function AppLayout({ children }: { children: ReactNode }) {
   const [location] = useLocation();
-  const { signOut } = useClerk();
-  const { user } = useUser();
+  const { user, logout } = useAuth();
 
-  const { data: adminStatus } = useQuery({
-    queryKey: ["admin-status"],
-    queryFn: async () => {
-      const res = await fetch(`${BASE}/api/admin/status`, { credentials: "include" });
-      if (!res.ok) return { isAdmin: false };
-      return res.json() as Promise<{ isAdmin: boolean }>;
-    },
-    enabled: !!user,
-    staleTime: 60_000,
-  });
-
-  const isAdmin = adminStatus?.isAdmin === true;
+  const isAdmin = user?.isAdmin === true;
 
   const handleSignOut = () => {
-    const base = import.meta.env.BASE_URL?.replace(/\/$/, "") || "";
-    signOut({ redirectUrl: window.location.origin + base + "/sign-in" });
+    logout();
   };
 
   return (
@@ -91,17 +75,13 @@ export function AppLayout({ children }: { children: ReactNode }) {
         {user && (
           <div className="shrink-0 px-4 pb-4 pt-2 border-t border-border mt-auto">
             <div className="flex items-center gap-3 px-3 py-2.5">
-              {user.imageUrl ? (
-                <img src={user.imageUrl} alt={user.fullName ?? "User"} className="w-7 h-7 rounded-full object-cover" />
-              ) : (
-                <div className="w-7 h-7 rounded-full bg-primary/20 flex items-center justify-center text-xs font-bold text-primary">
-                  {(user.firstName?.[0] ?? user.emailAddresses[0]?.emailAddress?.[0] ?? "U").toUpperCase()}
-                </div>
-              )}
+              <div className="w-7 h-7 rounded-full bg-primary/20 flex items-center justify-center text-xs font-bold text-primary shrink-0">
+                {(user.name?.[0] ?? user.email?.[0] ?? "U").toUpperCase()}
+              </div>
               <div className="flex-1 min-w-0">
-                <p className="text-xs font-semibold text-foreground truncate">{user.fullName ?? user.emailAddresses[0]?.emailAddress}</p>
-                {user.fullName && (
-                  <p className="text-xs text-muted-foreground truncate">{user.emailAddresses[0]?.emailAddress}</p>
+                <p className="text-xs font-semibold text-foreground truncate">{user.name || user.email}</p>
+                {user.name && (
+                  <p className="text-xs text-muted-foreground truncate">{user.email}</p>
                 )}
               </div>
               <button

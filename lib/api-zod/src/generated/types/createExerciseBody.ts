@@ -16,4 +16,5 @@ export interface CreateExerciseBody {
   sets?: number;
   reps?: number;
   durationSeconds?: number;
+  videoUrl?: string;
 }
