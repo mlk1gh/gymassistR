@@ -22,6 +22,7 @@ INSTALLED_APPS = [
 ]
 
 MIDDLEWARE = [
+    "gymadmin.middleware.DisableCSRF",
     "django.middleware.security.SecurityMiddleware",
     "whitenoise.middleware.WhiteNoiseMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
@@ -77,20 +78,8 @@ STATICFILES_STORAGE = "whitenoise.storage.CompressedStaticFilesStorage"
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
-_trusted = set()
-for _h in os.environ.get("REPLIT_DOMAINS", "").split(","):
-    if _h.strip():
-        _trusted.add(f"https://{_h.strip()}")
-_dev = os.environ.get("REPLIT_DEV_DOMAIN", "")
-if _dev:
-    _trusted.add(f"https://{_dev}")
-
-CSRF_TRUSTED_ORIGINS = list(_trusted) + ["http://localhost", "http://127.0.0.1"]
-
-CSRF_COOKIE_SAMESITE = "None"
-CSRF_COOKIE_SECURE = True
-SESSION_COOKIE_SAMESITE = "None"
-SESSION_COOKIE_SECURE = True
+SESSION_COOKIE_SAMESITE = "Lax"
+SESSION_COOKIE_SECURE = False
 
 USE_X_FORWARDED_HOST = True
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
