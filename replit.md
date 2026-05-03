@@ -32,6 +32,19 @@ GymAssist uses custom JWT authentication (email + password).
 - Admin check: `isAdmin` flag in `users` table + `ADMIN_EMAILS` env var override on login
 - Ban = set `banned: true` in users table; banned users cannot log in
 
+## Django Admin
+
+A separate Django service provides a full database management panel.
+
+- URL: `/django-admin/admin/`
+- Login with Django superuser credentials (separate from the app's JWT users)
+- Default superuser: username `admin`, password `gymassist_admin` (override with `DJANGO_ADMIN_USER`, `DJANGO_ADMIN_PASSWORD`, `DJANGO_ADMIN_EMAIL` env vars)
+- All tables exposed with full CRUD: App Users, Exercises, Workouts, Workout Exercises, Health Metrics, Chat Messages
+- Django uses `managed = False` models — schema is owned by Drizzle, Django only reads/writes data
+- Django auth tables (`auth_user`, `auth_*`, `django_*`) are separate from the app's `users` table
+- Static files served via Whitenoise at `/django-admin/static/`
+- Located in `artifacts/django-admin/`; Python packages in `requirements.txt`
+
 ## App Structure
 
 - `/` — Redirects: signed-in → /dashboard, signed-out → /sign-in
