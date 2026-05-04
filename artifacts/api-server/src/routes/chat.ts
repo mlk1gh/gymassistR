@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { db, chatMessagesTable, workoutsTable, exercisesTable, workoutExercisesTable, healthMetricsTable } from "@workspace/db";
+import { db, chatMessagesTable, workoutsTable, exercisesTable, workoutExercisesTable, healthMetricsTable, usersTable } from "@workspace/db";
 import { openai } from "@workspace/integrations-openai-ai-server";
 import { serializeRows, serializeRow } from "../lib/serialize";
 import { SendChatMessageBody, SendChatMessageResponse, GetChatHistoryResponse } from "@workspace/api-zod";
@@ -241,12 +241,16 @@ router.post("/chat", async (req, res): Promise<void> => {
   const userMessage = parsed.data.message;
   await db.insert(chatMessagesTable).values({ clerkUserId: userId, role: "user", content: userMessage });
 
-  const [workouts, recentMetrics, history] = await Promise.all([
+  const [workouts, recentMetrics, history, profileRows] = await Promise.all([
     db.select().from(workoutsTable).where(eq(workoutsTable.clerkUserId, userId)).orderBy(asc(workoutsTable.createdAt)),
     db.select({ type: healthMetricsTable.type, value: healthMetricsTable.value, unit: healthMetricsTable.unit, loggedAt: healthMetricsTable.loggedAt })
       .from(healthMetricsTable).where(eq(healthMetricsTable.clerkUserId, userId)).orderBy(desc(healthMetricsTable.loggedAt)).limit(15),
     db.select().from(chatMessagesTable).where(eq(chatMessagesTable.clerkUserId, userId)).orderBy(asc(chatMessagesTable.createdAt)),
+    db.select({ age: usersTable.age, heightCm: usersTable.heightCm, weightKg: usersTable.weightKg, fitnessGoal: usersTable.fitnessGoal })
+      .from(usersTable).where(eq(usersTable.id, Number(userId))).limit(1),
   ]);
+
+  const profile = profileRows[0] ?? null;
 
   const workoutSummary = workouts.length > 0
     ? workouts.map((w) => `  • ${w.name} (ID:${w.id}) — goal: ${w.goal}, ${w.difficulty}, ${w.durationMinutes} min${w.completed ? ", completed" : ""}`).join("\n")
@@ -256,9 +260,21 @@ router.post("/chat", async (req, res): Promise<void> => {
     ? recentMetrics.map((m) => `  • ${m.type}: ${m.value} ${m.unit} (${new Date(m.loggedAt).toLocaleDateString()})`).join("\n")
     : "  None logged yet.";
 
+  const profileLines: string[] = [];
+  if (profile) {
+    if (profile.age != null) profileLines.push(`  • Age: ${profile.age} years`);
+    if (profile.heightCm != null) profileLines.push(`  • Height: ${profile.heightCm} cm`);
+    if (profile.weightKg != null) profileLines.push(`  • Weight: ${profile.weightKg} kg`);
+    if (profile.fitnessGoal) profileLines.push(`  • Fitness goal: ${profile.fitnessGoal}`);
+  }
+  const profileSummary = profileLines.length > 0 ? profileLines.join("\n") : "  Not set yet.";
+
   const systemPrompt = `You are GymAssist, an expert AI fitness coach and personal health assistant. You have direct access to this user's fitness data and can take real actions on their behalf.
 
 ## Current User Data
+
+**User Profile:**
+${profileSummary}
 
 **Workout Plans (${workouts.length} total):**
 ${workoutSummary}
@@ -278,7 +294,7 @@ You have tools that let you:
 ## How to Respond
 - When the user asks you to create a workout, log data, or add exercises — USE YOUR TOOLS to actually do it, don't just describe how.
 - After using a tool, naturally confirm what was done (e.g. "Done! I've created your Push Day plan — you can find it in the Workouts section.").
-- Reference the user's actual data above when giving advice.
+- Reference the user's actual data above when giving advice. When the user's profile is set, personalise recommendations using their age, height, weight, and fitness goal (e.g. "Given your goal to lose 10 kg..." or "At 175 cm and 80 kg, a calorie target of X would suit you well.").
 - Be concise, motivating, and practical. Prioritize safety.
 - If you create a workout or log a metric, tell the user where they can see it in the app.`;
 
