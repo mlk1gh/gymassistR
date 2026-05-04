@@ -21,11 +21,17 @@ import { toast } from "@/hooks/use-toast";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
+import { getToken } from "@/lib/auth";
 
 const BASE = import.meta.env.BASE_URL?.replace(/\/$/, "") ?? "";
 
 async function apiFetch<T>(path: string, options?: RequestInit): Promise<T> {
-  const res = await fetch(`${BASE}${path}`, { credentials: "include", ...options });
+  const token = getToken();
+  const authHeaders: Record<string, string> = token ? { Authorization: `Bearer ${token}` } : {};
+  const res = await fetch(`${BASE}${path}`, {
+    ...options,
+    headers: { ...authHeaders, ...(options?.headers as Record<string, string> | undefined) },
+  });
   if (!res.ok) {
     const err = await res.json().catch(() => ({ error: res.statusText }));
     throw new Error(err?.error ?? res.statusText);
