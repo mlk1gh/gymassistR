@@ -16,7 +16,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { Plus, Trash2, Pencil, Search, Play, X, ChevronDown, ChevronRight, Dumbbell } from "lucide-react";
+import { Plus, Trash2, Pencil, Search, Play, X, ChevronDown, ChevronRight, Dumbbell, Home, Heart, Zap, Target, RotateCcw, User } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -83,6 +83,102 @@ const goalColors: Record<string, string> = {
 };
 
 const MUSCLE_GROUPS = ["Legs", "Back", "Chest", "Shoulders", "Arms", "Core", "Full Body", "Cardio"];
+
+type CategoryDef = {
+  key: string;
+  label: string;
+  icon: React.ElementType;
+  color: string;
+  bgColor: string;
+  filter: (ex: { muscleGroup: string; equipment?: string | null }) => boolean;
+};
+
+const CATEGORIES: CategoryDef[] = [
+  {
+    key: "all",
+    label: "All",
+    icon: Dumbbell,
+    color: "text-primary",
+    bgColor: "bg-primary/10",
+    filter: () => true,
+  },
+  {
+    key: "chest",
+    label: "Chest",
+    icon: Target,
+    color: "text-rose-400",
+    bgColor: "bg-rose-400/10",
+    filter: (ex) => ex.muscleGroup === "Chest",
+  },
+  {
+    key: "back",
+    label: "Back",
+    icon: User,
+    color: "text-blue-400",
+    bgColor: "bg-blue-400/10",
+    filter: (ex) => ex.muscleGroup === "Back",
+  },
+  {
+    key: "legs",
+    label: "Legs",
+    icon: Zap,
+    color: "text-green-400",
+    bgColor: "bg-green-400/10",
+    filter: (ex) => ex.muscleGroup === "Legs",
+  },
+  {
+    key: "shoulders",
+    label: "Shoulders",
+    icon: RotateCcw,
+    color: "text-purple-400",
+    bgColor: "bg-purple-400/10",
+    filter: (ex) => ex.muscleGroup === "Shoulders",
+  },
+  {
+    key: "arms",
+    label: "Arms",
+    icon: Dumbbell,
+    color: "text-orange-400",
+    bgColor: "bg-orange-400/10",
+    filter: (ex) => ex.muscleGroup === "Arms",
+  },
+  {
+    key: "core",
+    label: "Core",
+    icon: Target,
+    color: "text-yellow-400",
+    bgColor: "bg-yellow-400/10",
+    filter: (ex) => ex.muscleGroup === "Core",
+  },
+  {
+    key: "cardio",
+    label: "Cardio",
+    icon: Heart,
+    color: "text-red-400",
+    bgColor: "bg-red-400/10",
+    filter: (ex) => ex.muscleGroup === "Cardio",
+  },
+  {
+    key: "home",
+    label: "Home",
+    icon: Home,
+    color: "text-cyan-400",
+    bgColor: "bg-cyan-400/10",
+    filter: (ex) =>
+      !ex.equipment ||
+      ex.equipment.toLowerCase().includes("bodyweight") ||
+      ex.equipment.toLowerCase() === "none" ||
+      ex.equipment.toLowerCase() === "no equipment",
+  },
+  {
+    key: "fullbody",
+    label: "Full Body",
+    icon: Zap,
+    color: "text-indigo-400",
+    bgColor: "bg-indigo-400/10",
+    filter: (ex) => ex.muscleGroup === "Full Body",
+  },
+];
 
 function getYouTubeEmbedUrl(url: string): string | null {
   try {
@@ -436,10 +532,11 @@ export default function ExercisesPage() {
   );
 
   const allExercises = exercises.data ?? [];
+  const activeCategory = CATEGORIES.find((c) => c.key === filterGroup) ?? CATEGORIES[0]!;
   const filteredExercises = allExercises.filter((ex) => {
     const matchSearch = ex.name.toLowerCase().includes(search.toLowerCase()) || ex.muscleGroup.toLowerCase().includes(search.toLowerCase());
-    const matchGroup = filterGroup === "all" || ex.muscleGroup === filterGroup;
-    return matchSearch && matchGroup;
+    const matchCategory = activeCategory.filter(ex);
+    return matchSearch && matchCategory;
   });
 
   return (
@@ -499,29 +596,44 @@ export default function ExercisesPage() {
           </TabsContent>
 
           <TabsContent value="library" className="mt-4 space-y-4">
-            <div className="flex items-center justify-between">
-              <p className="text-sm text-muted-foreground">{allExercises.length} exercises in library</p>
-              <Button onClick={openCreate} data-testid="create-exercise-btn" className="gap-2" size="sm">
-                <Plus className="w-4 h-4" /> Add Exercise
+            {/* Category cards */}
+            <div className="grid grid-cols-5 sm:grid-cols-5 gap-2">
+              {CATEGORIES.map((cat) => {
+                const Icon = cat.icon;
+                const isActive = filterGroup === cat.key;
+                const count = cat.key === "all" ? allExercises.length : allExercises.filter(cat.filter).length;
+                return (
+                  <button
+                    key={cat.key}
+                    onClick={() => { setFilterGroup(cat.key); setSearch(""); }}
+                    className={`flex flex-col items-center gap-1.5 p-3 rounded-xl border transition-all ${
+                      isActive
+                        ? "border-primary bg-primary/10 shadow-sm"
+                        : "border-border bg-card hover:bg-secondary/50"
+                    }`}
+                  >
+                    <div className={`w-9 h-9 rounded-lg flex items-center justify-center ${isActive ? "bg-primary text-primary-foreground" : `${cat.bgColor} ${cat.color}`}`}>
+                      <Icon className="w-4 h-4" />
+                    </div>
+                    <span className={`text-[11px] font-medium leading-none ${isActive ? "text-primary" : "text-foreground"}`}>{cat.label}</span>
+                    <span className="text-[10px] text-muted-foreground">{count}</span>
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Search + add button */}
+            <div className="flex items-center gap-2">
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                <Input placeholder={`Search ${activeCategory.label === "All" ? "exercises" : activeCategory.label}...`} value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9" data-testid="exercise-search" />
+              </div>
+              <Button onClick={openCreate} data-testid="create-exercise-btn" className="gap-2 shrink-0" size="sm">
+                <Plus className="w-4 h-4" /> Add
               </Button>
             </div>
 
-            <div className="flex gap-3 flex-wrap">
-              <div className="relative flex-1 min-w-48">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                <Input placeholder="Search exercises..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9" data-testid="exercise-search" />
-              </div>
-              <Select value={filterGroup} onValueChange={setFilterGroup}>
-                <SelectTrigger className="w-40" data-testid="muscle-group-filter">
-                  <SelectValue placeholder="All muscles" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All muscles</SelectItem>
-                  {MUSCLE_GROUPS.map((g) => <SelectItem key={g} value={g}>{g}</SelectItem>)}
-                </SelectContent>
-              </Select>
-            </div>
-
+            {/* Results */}
             {exercises.isLoading ? (
               <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
                 {[...Array(6)].map((_, i) => <div key={i} className="h-36 animate-pulse bg-card rounded-lg border border-border" />)}
@@ -529,14 +641,17 @@ export default function ExercisesPage() {
             ) : filteredExercises.length === 0 ? (
               <Card className="bg-card border-border">
                 <CardContent className="py-16 text-center">
-                  <p className="text-muted-foreground">
-                    {allExercises.length === 0 ? "No exercises yet. Add your first one." : "No exercises match your search."}
+                  <div className={`w-12 h-12 rounded-xl ${activeCategory.bgColor} flex items-center justify-center mx-auto mb-3`}>
+                    <activeCategory.icon className={`w-6 h-6 ${activeCategory.color}`} />
+                  </div>
+                  <p className="text-muted-foreground text-sm">
+                    {allExercises.length === 0
+                      ? "No exercises yet. Add your first one."
+                      : `No ${activeCategory.label === "All" ? "" : activeCategory.label + " "}exercises found.`}
                   </p>
-                  {allExercises.length === 0 && (
-                    <Button onClick={openCreate} className="mt-4 gap-2">
-                      <Plus className="w-4 h-4" /> Add Exercise
-                    </Button>
-                  )}
+                  <Button onClick={openCreate} className="mt-4 gap-2" size="sm">
+                    <Plus className="w-4 h-4" /> Add Exercise
+                  </Button>
                 </CardContent>
               </Card>
             ) : (
