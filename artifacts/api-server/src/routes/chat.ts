@@ -140,7 +140,6 @@ const toolDefinitions = [
           sets: { type: "number", description: "Recommended number of sets." },
           reps: { type: "number", description: "Recommended number of reps per set." },
           durationSeconds: { type: "number", description: "Duration in seconds (for timed exercises like planks). Omit if sets/reps apply." },
-          videoUrl: { type: "string", description: "YouTube video URL demonstrating the exercise, e.g. https://www.youtube.com/watch?v=... — include this whenever you know a good tutorial video for the exercise." },
         },
         required: ["workoutId", "name", "muscleGroup", "difficulty"],
       },
@@ -257,7 +256,7 @@ async function executeToolCall(name: string, args: Record<string, unknown>, user
         sets: (args.sets as number | undefined) ?? null,
         reps: (args.reps as number | undefined) ?? null,
         durationSeconds: (args.durationSeconds as number | undefined) ?? null,
-        videoUrl: (args.videoUrl as string | undefined) ?? null,
+        videoUrl: null,
       }).returning();
 
       await db.insert(workoutExercisesTable).values({ workoutId, exerciseId: exercise.id, order: 0 });
