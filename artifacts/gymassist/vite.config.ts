@@ -53,7 +53,7 @@ export default defineConfig({
     ...(process.env.REPL_ID === undefined ? {
       proxy: {
         "/api": {
-          target: `http://localhost:${process.env.API_PORT ?? "3000"}`,
+          target: `http://localhost:${process.env.API_PORT ?? "8080"}`,
           changeOrigin: true,
         },
       },
