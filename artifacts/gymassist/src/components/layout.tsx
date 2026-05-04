@@ -1,6 +1,6 @@
 import { ReactNode } from "react";
 import { Link, useLocation } from "wouter";
-import { Activity, LayoutDashboard, Dumbbell, HeartPulse, MessageSquareText, LogOut, ShieldCheck } from "lucide-react";
+import { Activity, LayoutDashboard, Dumbbell, HeartPulse, MessageSquareText, LogOut, ShieldCheck, UserCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/lib/auth";
 
@@ -10,6 +10,7 @@ const NAV_ITEMS = [
   { href: "/exercises", label: "Exercises", icon: Dumbbell },
   { href: "/health", label: "Health", icon: HeartPulse },
   { href: "/chat", label: "AI Coach", icon: MessageSquareText },
+  { href: "/profile", label: "My Profile", icon: UserCircle },
 ];
 
 export function AppLayout({ children }: { children: ReactNode }) {

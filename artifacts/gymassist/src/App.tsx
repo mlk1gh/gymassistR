@@ -18,6 +18,7 @@ import ExercisesPage from "@/pages/exercises";
 import HealthPage from "@/pages/health";
 import ChatPage from "@/pages/chat";
 import AdminPage from "@/pages/admin";
+import ProfilePage from "@/pages/profile";
 
 const basePath = import.meta.env.BASE_URL.replace(/\/$/, "");
 
@@ -223,6 +224,7 @@ function Router() {
       <Route path="/health" component={() => <ProtectedRoute component={HealthPage} />} />
       <Route path="/chat" component={() => <ProtectedRoute component={ChatPage} />} />
       <Route path="/admin" component={() => <ProtectedRoute component={AdminPage} />} />
+      <Route path="/profile" component={() => <ProtectedRoute component={ProfilePage} />} />
       <Route component={NotFound} />
     </Switch>
   );

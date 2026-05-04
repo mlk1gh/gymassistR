@@ -7,6 +7,7 @@ import healthMetricsRouter from "./healthMetrics";
 import chatRouter from "./chat";
 import dashboardRouter from "./dashboard";
 import adminRouter from "./admin";
+import profileRouter from "./profile";
 
 const router: IRouter = Router();
 
@@ -18,5 +19,6 @@ router.use(healthMetricsRouter);
 router.use(chatRouter);
 router.use(dashboardRouter);
 router.use(adminRouter);
+router.use(profileRouter);
 
 export default router;

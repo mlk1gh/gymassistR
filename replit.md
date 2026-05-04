@@ -54,6 +54,38 @@ A separate Django service provides a full database management panel.
 - `/exercises` — Exercise library (shared) with search and filter
 - `/health` — Health metric logging and trend charts
 - `/chat` — AI coach chat (OpenAI gpt-5.2, per-user history)
+- `/profile` — User profile editing (name, age, height, weight, fitness goal)
+
+## User Profile
+
+Users can edit their personal data at `/profile`:
+- **Fields**: display name, age, height (cm), weight (kg), fitness goal (free text)
+- **DB columns added**: `age INTEGER`, `height_cm REAL`, `weight_kg REAL`, `fitness_goal VARCHAR(512)` on the `users` table
+- **API**: `GET /api/user/profile` and `PATCH /api/user/profile` — both require Bearer token
+- **Frontend**: `artifacts/gymassist/src/pages/profile.tsx`, registered in `App.tsx`, linked in sidebar nav
+
+## GitHub Sync
+
+Push the current codebase to GitHub at the end of each session.
+
+**Setup (one-time):**
+1. Generate a GitHub Personal Access Token (classic) with `repo` scope at https://github.com/settings/tokens
+2. Add it as a secret named `GITHUB_TOKEN` in the Replit Secrets panel
+
+**Push commands:**
+```bash
+# Push main branch (most common)
+pnpm run push-github
+
+# Push a specific branch
+bash scripts/push-to-github.sh my-feature-branch
+```
+
+**Notes:**
+- Remote used: `github` → `https://github.com/mlk1gh/gymassistR.git`
+- Credentials are injected transiently via git credential helper — PAT is **never** written to `.git/config` or the remote URL
+- The script creates/updates the `github` remote automatically if needed
+- Convention: always push `main` (the platform-managed branch Replit commits to)
 
 ## Key Commands
 

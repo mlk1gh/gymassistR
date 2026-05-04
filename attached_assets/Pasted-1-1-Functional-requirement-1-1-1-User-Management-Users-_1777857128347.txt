@@ -1,0 +1,45 @@
+1.1	Functional requirement 
+
+1.1.1	User Management
+•	Users can register and log in securely.
+•	Users can update their profiles with personal data (age, weight, height, fitness goals).
+•	Admin can manage user accounts (CRUD operations).
+1.1.2	Workout Planning
+•	Users can create, read, update, and delete personalized workout plans.
+•	System provides AI-generated workout suggestions based on user goals and preferences.
+•	Users can track progress on exercises and workouts over time.
+1.1.3	Health Monitoring
+•	Users can record and monitor health metrics, such as weight, calories, heart rate, and daily activity.
+•	System provides simple analytics and visualization (charts, progress reports).
+1.1.4	Chatbot Interaction
+•	Users interact with a secure AI-powered chatbot for workout guidance, health tips, and motivational support.
+•	Chatbot can respond to frequently asked questions about exercises, nutrition, and fitness.
+•	Chatbot integrates with user data to provide personalized advice.
+
+
+
+
+
+
+
+
+
+1.2	Non-Functional requirement
+
+1.2.1	 Performance
+•	System should handle multiple simultaneous users without significant delay.
+•	Chatbot response time should be minimal (<2 seconds for common queries).
+1.2.2	 Usability
+•	The interface should be user-friendly, intuitive, and responsive for both web and mobile devices.
+•	Easy navigation for workout tracking and health monitoring.
+1.2.3	 Reliability
+•	System must store data reliably with backup mechanisms to prevent data loss.
+•	Chatbot should provide consistent and accurate responses.
+1.2.4	Scalability
+•	The system should allow for future expansion, such as adding more exercises, integrating wearable devices, or multi-language support.
+1.2.5	Security
+•	Compliance with data protection standards (e.g., GDPR if applicable).
+•	Regular validation and protection against SQL injection, XSS, and other common vulnerabilities.
+1.2.6	Maintainability
+•	System should be modular to allow future updates and improvements without major redesign.
+•	Code should be documented and follow clean coding standards.
