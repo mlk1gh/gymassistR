@@ -86,6 +86,7 @@ bash scripts/push-to-github.sh my-feature-branch
 - Credentials are injected transiently via git credential helper — PAT is **never** written to `.git/config` or the remote URL
 - The script creates/updates the `github` remote automatically if needed
 - Convention: always push `main` (the platform-managed branch Replit commits to)
+- If the remote has diverged (e.g. a commit was made directly on GitHub), the push will fail with a clear message. To override: `ALLOW_FORCE_PUSH=true bash scripts/push-to-github.sh` — this uses `--force-with-lease`, which still protects against overwriting changes pushed by others after your last fetch
 
 ## Key Commands
 
