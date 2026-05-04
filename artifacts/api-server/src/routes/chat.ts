@@ -125,31 +125,8 @@ const toolDefinitions = [
   {
     type: "function" as const,
     function: {
-      name: "add_exercise_to_library",
-      description: "Create a brand-new exercise and save it to the exercise library only — do NOT add it to any workout. Use this when the user says things like 'add X to the library', 'save X to my exercises', or 'create an exercise' without mentioning a workout.",
-      parameters: {
-        type: "object",
-        properties: {
-          name: { type: "string", description: "Full name of the exercise, e.g. Romanian Deadlift, Cable Fly, Face Pull." },
-          muscleGroup: { type: "string", enum: ["Chest", "Back", "Legs", "Arms", "Core", "Shoulders", "Full Body", "Cardio"], description: "Primary muscle group targeted." },
-          difficulty: { type: "string", enum: ["beginner", "intermediate", "advanced"], description: "Difficulty level." },
-          description: { type: "string", description: "Brief description of the exercise and what it targets." },
-          equipment: { type: "string", description: "Equipment needed, e.g. Barbell, Dumbbell, Cable, Bodyweight, Resistance Band." },
-          instructions: { type: "string", description: "Step-by-step instructions for performing the exercise correctly." },
-          sets: { type: "number", description: "Recommended number of sets." },
-          reps: { type: "number", description: "Recommended number of reps per set." },
-          durationSeconds: { type: "number", description: "Duration in seconds (for timed exercises like planks). Omit if sets/reps apply." },
-          videoUrl: { type: "string", description: "YouTube video URL demonstrating the exercise — include this whenever you know a good tutorial video." },
-        },
-        required: ["name", "muscleGroup", "difficulty"],
-      },
-    },
-  },
-  {
-    type: "function" as const,
-    function: {
       name: "create_and_add_exercise",
-      description: "Create a brand-new exercise that doesn't exist in the library AND immediately add it to a specific workout plan. Use this ONLY when the user explicitly asks to add an exercise to a workout AND the exercise doesn't exist in the library yet. Do NOT use this just to add something to the library.",
+      description: "Create a brand-new exercise (not already in the library) and immediately add it to a workout plan. Use this when the user asks for an exercise that does not exist in the library yet.",
       parameters: {
         type: "object",
         properties: {
@@ -163,7 +140,6 @@ const toolDefinitions = [
           sets: { type: "number", description: "Recommended number of sets." },
           reps: { type: "number", description: "Recommended number of reps per set." },
           durationSeconds: { type: "number", description: "Duration in seconds (for timed exercises like planks). Omit if sets/reps apply." },
-          videoUrl: { type: "string", description: "YouTube video URL demonstrating the exercise, e.g. https://www.youtube.com/watch?v=... — include this whenever you know a good tutorial video for the exercise." },
         },
         required: ["workoutId", "name", "muscleGroup", "difficulty"],
       },
@@ -265,25 +241,6 @@ async function executeToolCall(name: string, args: Record<string, unknown>, user
       return { message: "Exercise added to workout plan successfully." };
     }
 
-    case "add_exercise_to_library": {
-      const [exercise] = await db.insert(exercisesTable).values({
-        name: args.name as string,
-        muscleGroup: args.muscleGroup as string,
-        difficulty: args.difficulty as string,
-        description: (args.description as string | undefined) ?? null,
-        equipment: (args.equipment as string | undefined) ?? null,
-        instructions: (args.instructions as string | undefined) ?? null,
-        sets: (args.sets as number | undefined) ?? null,
-        reps: (args.reps as number | undefined) ?? null,
-        durationSeconds: (args.durationSeconds as number | undefined) ?? null,
-        videoUrl: (args.videoUrl as string | undefined) ?? null,
-      }).returning();
-      return {
-        message: `Exercise "${exercise.name}" has been added to the Exercise Library. It is NOT added to any workout.`,
-        exerciseId: exercise.id,
-      };
-    }
-
     case "create_and_add_exercise": {
       const workoutId = args.workoutId as number;
       const [workout] = await db.select({ id: workoutsTable.id }).from(workoutsTable).where(and(eq(workoutsTable.id, workoutId), eq(workoutsTable.clerkUserId, userId)));
@@ -299,7 +256,7 @@ async function executeToolCall(name: string, args: Record<string, unknown>, user
         sets: (args.sets as number | undefined) ?? null,
         reps: (args.reps as number | undefined) ?? null,
         durationSeconds: (args.durationSeconds as number | undefined) ?? null,
-        videoUrl: (args.videoUrl as string | undefined) ?? null,
+        videoUrl: null,
       }).returning();
 
       await db.insert(workoutExercisesTable).values({ workoutId, exerciseId: exercise.id, order: 0 });
@@ -380,17 +337,13 @@ You have tools that let you:
 - CREATE new workout plans for the user
 - LOG health metrics (weight, steps, sleep, calories, heart rate, etc.)
 - ADD exercises from the library into a workout plan
-- ADD a brand-new exercise to the library only (without adding to any workout)
-- CREATE a brand-new exercise AND add it to a workout in one step
+- CREATE a brand-new exercise (any exercise not in the library) and add it to a workout in one step — use this whenever the user mentions an exercise that is not already in the library
 - MARK a workout as complete
 
 ## How to Respond
 - When the user asks you to create a workout, log data, or add exercises — USE YOUR TOOLS to actually do it, don't just describe how.
 - After using a tool, naturally confirm what was done (e.g. "Done! I've created your Push Day plan — you can find it in the Workouts section.").
-- **Choosing the right exercise tool — read carefully:**
-  - User says "add X to the library" / "save X to my exercises" / "create exercise X" (no workout mentioned): use add_exercise_to_library. Do NOT add to any workout.
-  - User says "add X to my [workout name]" / "put X in my push day": first check the library with get_exercise_library. If found, use add_exercise_to_workout. If NOT found, use create_and_add_exercise to create it and add it to the workout in one step.
-  - Never use create_and_add_exercise when the user only wants to add something to the library.
+- When the user asks to add an exercise: first check the library with get_exercise_library. If it's there, use add_exercise_to_workout. If it's NOT there, use create_and_add_exercise to create it with full details (sets, reps, muscle group, instructions) and add it in one step.
 - Reference the user's actual data above when giving advice. When the user's profile is set, personalise recommendations using their age, height, weight, and fitness goal (e.g. "Given your goal to lose 10 kg..." or "At 175 cm and 80 kg, a calorie target of X would suit you well.").
 - Be concise, motivating, and practical. Prioritize safety.
 - If you create a workout or log a metric, tell the user where they can see it in the app.`;
